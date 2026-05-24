@@ -24,7 +24,7 @@ export async function fetchProducts(filters?: {
   featured?: boolean;
 }): Promise<Product[]> {
   let q = supabase.from("products").select("*").order("created_at", { ascending: false });
-  if (filters?.category) q = q.eq("category", filters.category);
+  if (filters?.category) q = q.eq("category", filters.category as Product["category"]);
   if (filters?.featured) q = q.eq("is_featured", true);
   if (filters?.search) q = q.ilike("name", `%${filters.search}%`);
   const { data, error } = await q;
