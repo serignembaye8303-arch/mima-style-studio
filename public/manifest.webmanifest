@@ -1,0 +1,15 @@
+{
+  "name": "Mima Boutique",
+  "short_name": "Mima",
+  "description": "Mode féminine luxe — Robes, ensembles, chaussures, sacs et accessoires.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#faf8f5",
+  "theme_color": "#1a1a1a",
+  "icons": [
+    { "src": "/logo-mima.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/logo-mima.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
