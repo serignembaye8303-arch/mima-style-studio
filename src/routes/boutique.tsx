@@ -38,7 +38,7 @@ function Boutique() {
             {category ? CATEGORIES.find((c) => c.slug === category)?.label : "Toute la collection"}
           </h1>
           <form
-            onSubmit={(e) => { e.preventDefault(); navigate({ search: (p) => ({ ...p, q: query || undefined }) }); }}
+            onSubmit={(e) => { e.preventDefault(); navigate({ search: (p: Record<string, unknown>) => ({ ...p, q: query || undefined }) }); }}
             className="mt-8 max-w-md mx-auto flex items-center border-b border-foreground"
           >
             <Search className="h-4 w-4 text-muted-foreground" />
