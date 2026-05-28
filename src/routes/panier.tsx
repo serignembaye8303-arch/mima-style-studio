@@ -4,20 +4,44 @@ import { useCart, cartItemKey } from "@/lib/cart-context";
 import { SiteLayout } from "@/components/SiteLayout";
 import { formatPrice } from "@/lib/format";
 import { fetchWhatsAppNumber } from "@/lib/products";
+import { createOrder, markWhatsAppSent } from "@/lib/admin-api";
+import { useAuth } from "@/lib/auth-context";
 import { Minus, Plus, X } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/panier")({ component: Panier });
 
 function Panier() {
   const { items, remove, setQuantity, total, clear } = useCart();
+  const { user } = useAuth();
   const { data: whatsapp = "+221770000000" } = useQuery({ queryKey: ["whatsapp"], queryFn: fetchWhatsAppNumber });
+  const [form, setForm] = useState({ name: "", phone: "", address: "", city: "", notes: "" });
+  const [sending, setSending] = useState(false);
 
-  const orderViaWhatsApp = () => {
-    const lines = items.map((i) => `• ${i.name}${i.size ? ` (${i.size})` : ""}${i.color ? ` — ${i.color}` : ""} × ${i.quantity} = ${formatPrice(i.price * i.quantity)}`).join("\n");
-    const msg = `Bonjour Mima Boutique 🌸\n\nJe souhaite commander :\n${lines}\n\nTotal : ${formatPrice(total)}\n\nMerci !`;
-    const num = whatsapp.replace(/[^0-9]/g, "");
-    window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, "_blank");
+  const orderViaWhatsApp = async () => {
+    if (!form.name || !form.phone) { toast.error("Nom et téléphone requis"); return; }
+    setSending(true);
+    try {
+      const order = await createOrder({
+        customer_name: form.name, customer_phone: form.phone,
+        customer_address: form.address, customer_city: form.city, notes: form.notes,
+        user_id: user?.id ?? null,
+        items: items.map((i) => ({
+          product_id: i.id, product_name: i.name, product_image: i.image,
+          price: i.price, quantity: i.quantity, size: i.size, color: i.color,
+        })),
+      });
+      const lines = items.map((i) => `• ${i.name}${i.size ? ` (${i.size})` : ""}${i.color ? ` — ${i.color}` : ""} × ${i.quantity} = ${formatPrice(i.price * i.quantity)}`).join("\n");
+      const msg = `Bonjour Mima Boutique 🌸\n\nCommande #${order.id.slice(0, 8)}\n${form.name} · ${form.phone}${form.address ? `\n${form.address}${form.city ? `, ${form.city}` : ""}` : ""}\n\n${lines}\n\nTotal : ${formatPrice(total)}\n\nMerci !`;
+      await markWhatsAppSent(order.id);
+      const num = whatsapp.replace(/[^0-9]/g, "");
+      window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, "_blank");
+      clear();
+      toast.success("Commande enregistrée !");
+    } catch (e: any) { toast.error(e.message ?? "Erreur"); } finally { setSending(false); }
   };
+
 
   return (
     <SiteLayout>
