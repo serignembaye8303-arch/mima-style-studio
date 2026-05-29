@@ -3,15 +3,17 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProducts } from "@/lib/products";
 import { deleteProduct } from "@/lib/admin-api";
 import { formatPrice } from "@/lib/format";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Upload } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { BulkImportDialog } from "@/components/admin/BulkImportDialog";
 
 export const Route = createFileRoute("/admin/products")({ component: ProductsAdmin });
 
 function ProductsAdmin() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
   const { data } = useQuery({ queryKey: ["admin-products"], queryFn: () => fetchProducts() });
 
   const filtered = (data ?? []).filter((p) => p.name.toLowerCase().includes(q.toLowerCase()));
@@ -34,10 +36,17 @@ function ProductsAdmin() {
           <p className="tracking-luxe text-[10px] text-gold">Catalogue</p>
           <h1 className="font-display text-3xl mt-1">Produits ({data?.length ?? 0})</h1>
         </div>
-        <Link to="/admin/products/new" className="inline-flex items-center gap-2 bg-foreground text-background px-5 py-2.5 text-xs tracking-luxe hover:bg-foreground/90">
-          <Plus className="h-4 w-4" /> Nouveau produit
-        </Link>
+        <div className="flex gap-2">
+          <button onClick={() => setImportOpen(true)} className="inline-flex items-center gap-2 border border-foreground px-4 py-2.5 text-xs tracking-luxe hover:bg-secondary">
+            <Upload className="h-4 w-4" /> Import CSV
+          </button>
+          <Link to="/admin/products/new" className="inline-flex items-center gap-2 bg-foreground text-background px-5 py-2.5 text-xs tracking-luxe hover:bg-foreground/90">
+            <Plus className="h-4 w-4" /> Nouveau produit
+          </Link>
+        </div>
       </header>
+
+      <BulkImportDialog open={importOpen} onClose={() => setImportOpen(false)} onDone={() => qc.invalidateQueries({ queryKey: ["admin-products"] })} />
 
       <div className="bg-background border rounded-lg p-3 flex items-center gap-2">
         <Search className="h-4 w-4 text-muted-foreground" />
