@@ -33,6 +33,7 @@ export function ProductForm({ initial }: { initial?: ProductFormValues }) {
   const [f, setF] = useState<ProductFormValues>(initial ?? { category: "robes", price: 0, stock: 0, images: [], sizes: [], colors: [], is_new: true });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [preview, setPreview] = useState(false);
 
   function set<K extends keyof ProductFormValues>(k: K, v: ProductFormValues[K]) {
     setF((p) => ({ ...p, [k]: v }));
@@ -148,10 +149,48 @@ export function ProductForm({ initial }: { initial?: ProductFormValues }) {
           </label>
         </div>
 
+        <button type="button" onClick={() => setPreview(true)} className="w-full border border-foreground px-6 py-3 text-xs tracking-luxe hover:bg-secondary">
+          Aperçu avant publication
+        </button>
         <button type="submit" disabled={saving} className="w-full bg-foreground text-background px-6 py-3 text-xs tracking-luxe disabled:opacity-50">
           {saving ? "Enregistrement…" : initial?.id ? "Mettre à jour" : "Créer le produit"}
         </button>
       </aside>
+
+      {preview && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setPreview(false)}>
+          <div className="bg-background rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-5 border-b">
+              <h3 className="font-display text-xl">Aperçu produit</h3>
+              <button type="button" onClick={() => setPreview(false)} className="p-1 hover:bg-secondary rounded"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="grid md:grid-cols-2 gap-6 p-6">
+              <div className="space-y-2">
+                {f.images?.[0] ? <img src={f.images[0]} alt={f.name} className="w-full aspect-[3/4] object-cover rounded" /> : <div className="aspect-[3/4] bg-secondary rounded flex items-center justify-center text-muted-foreground text-xs">Aucune image</div>}
+                <div className="grid grid-cols-4 gap-2">{f.images?.slice(1, 5).map((u) => <img key={u} src={u} className="aspect-square object-cover rounded" />)}</div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex gap-1">
+                  {f.is_new && <span className="bg-foreground text-background text-[10px] tracking-luxe px-2 py-1 rounded">Nouveau</span>}
+                  {f.sale_price && <span className="bg-gold text-background text-[10px] tracking-luxe px-2 py-1 rounded">Promo</span>}
+                </div>
+                <p className="tracking-luxe text-[10px] text-gold uppercase">{f.category}</p>
+                <h2 className="font-display text-3xl">{f.name || "Nom du produit"}</h2>
+                <div className="flex items-baseline gap-2">
+                  {f.sale_price ? <>
+                    <span className="text-2xl font-mono text-gold">{f.sale_price.toLocaleString()} XOF</span>
+                    <span className="text-sm line-through text-muted-foreground">{f.price?.toLocaleString()} XOF</span>
+                  </> : <span className="text-2xl font-mono">{f.price?.toLocaleString() ?? 0} XOF</span>}
+                </div>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{f.description || "Aucune description."}</p>
+                {f.sizes?.length ? <div className="text-xs"><span className="text-muted-foreground">Tailles : </span>{f.sizes.join(" · ")}</div> : null}
+                {f.colors?.length ? <div className="text-xs"><span className="text-muted-foreground">Couleurs : </span>{f.colors.join(" · ")}</div> : null}
+                <p className="text-xs text-muted-foreground">Stock : {f.stock ?? 0}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }
