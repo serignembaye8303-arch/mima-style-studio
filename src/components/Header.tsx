@@ -42,6 +42,11 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-1">
+          {isStaff && (
+            <Link to="/admin" className="hidden sm:inline-flex items-center gap-1.5 mr-2 px-3 py-1.5 bg-foreground text-background text-[10px] tracking-luxe hover:bg-foreground/90" aria-label="Admin">
+              <LayoutDashboard className="h-3.5 w-3.5" /> Admin
+            </Link>
+          )}
           <Link to="/boutique" className="p-2 hover:text-gold transition-colors" aria-label="Recherche">
             <Search className="h-5 w-5" />
           </Link>
