@@ -1,14 +1,16 @@
 import { Link } from "@tanstack/react-router";
-import { Heart, ShoppingBag, Search, User, Menu, X } from "lucide-react";
+import { Heart, ShoppingBag, Search, User, Menu, X, LayoutDashboard } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
+import { useIsStaff } from "@/lib/use-role";
 import { CATEGORIES } from "@/lib/format";
 import logo from "@/assets/logo-mima.png";
 
 export function Header() {
   const { count, setOpen } = useCart();
   const { user } = useAuth();
+  const { isStaff } = useIsStaff();
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -40,6 +42,11 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-1">
+          {isStaff && (
+            <Link to="/admin" className="hidden sm:inline-flex items-center gap-1.5 mr-2 px-3 py-1.5 bg-foreground text-background text-[10px] tracking-luxe hover:bg-foreground/90" aria-label="Admin">
+              <LayoutDashboard className="h-3.5 w-3.5" /> Admin
+            </Link>
+          )}
           <Link to="/boutique" className="p-2 hover:text-gold transition-colors" aria-label="Recherche">
             <Search className="h-5 w-5" />
           </Link>
