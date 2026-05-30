@@ -132,7 +132,7 @@ function Panier() {
                 />
               </div>
               <button onClick={orderViaWhatsApp} disabled={sending} className="mt-4 w-full bg-foreground text-background py-4 tracking-luxe text-xs hover:bg-foreground/90 disabled:opacity-60">
-                Commander via WhatsApp
+                {sending ? "Envoi…" : "Commander via WhatsApp"}
               </button>
               <button onClick={clear} className="mt-3 w-full text-[11px] tracking-luxe text-muted-foreground hover:text-foreground">Vider le panier</button>
               <p className="mt-4 text-[11px] text-muted-foreground text-center">Vous recevrez confirmation et lien de paiement par WhatsApp.</p>
