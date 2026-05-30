@@ -10,6 +10,21 @@ import { Minus, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+function validatePhone(phone: string): boolean {
+  const cleaned = phone.replace(/\s+/g, "").replace(/[-.]/g, "");
+  // Sénégal: +2217XXXXXXXX ou 7XXXXXXXX (9 chiffres après l'indicatif ou 9 chiffres locaux)
+  const regex = /^(\+221)?[7][0-9]{8}$/;
+  return regex.test(cleaned);
+}
+
+interface FormErrors {
+  name?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  notes?: string;
+}
+
 export const Route = createFileRoute("/panier")({ component: Panier });
 
 function Panier() {
@@ -17,15 +32,50 @@ function Panier() {
   const { user } = useAuth();
   const { data: whatsapp = "+221770000000" } = useQuery({ queryKey: ["whatsapp"], queryFn: fetchWhatsAppNumber });
   const [form, setForm] = useState({ name: "", phone: "", address: "", city: "", notes: "" });
+  const [errors, setErrors] = useState<FormErrors>({});
   const [sending, setSending] = useState(false);
 
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    if (!form.name.trim()) {
+      newErrors.name = "Le nom complet est requis";
+    } else if (form.name.trim().length < 2) {
+      newErrors.name = "Le nom doit contenir au moins 2 caractères";
+    }
+
+    if (!form.phone.trim()) {
+      newErrors.phone = "Le numéro de téléphone est requis";
+    } else if (!validatePhone(form.phone)) {
+      newErrors.phone = "Format invalide. Ex: 77 123 45 67 ou +221 77 123 45 67";
+    }
+
+    // Adresse complète : si l'une est renseignée, l'autre doit l'être aussi
+    if (form.address.trim() && !form.city.trim()) {
+      newErrors.city = "Veuillez indiquer la ville";
+    }
+    if (form.city.trim() && !form.address.trim()) {
+      newErrors.address = "Veuillez indiquer l'adresse";
+    }
+
+    if (form.notes.trim().length > 500) {
+      newErrors.notes = "Les notes ne doivent pas dépasser 500 caractères";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const orderViaWhatsApp = async () => {
-    if (!form.name || !form.phone) { toast.error("Nom et téléphone requis"); return; }
+    if (!validateForm()) {
+      toast.error("Veuillez corriger les erreurs avant de continuer");
+      return;
+    }
     setSending(true);
     try {
       const order = await createOrder({
-        customer_name: form.name, customer_phone: form.phone,
-        customer_address: form.address, customer_city: form.city, notes: form.notes,
+        customer_name: form.name.trim(), customer_phone: form.phone.trim(),
+        customer_address: form.address.trim(), customer_city: form.city.trim(), notes: form.notes.trim(),
         user_id: user?.id ?? null,
         items: items.map((i) => ({
           product_id: i.id, product_name: i.name, product_image: i.image,
@@ -33,7 +83,7 @@ function Panier() {
         })),
       });
       const lines = items.map((i) => `• ${i.name}${i.size ? ` (${i.size})` : ""}${i.color ? ` — ${i.color}` : ""} × ${i.quantity} = ${formatPrice(i.price * i.quantity)}`).join("\n");
-      const msg = `Bonjour Mima Boutique 🌸\n\nCommande #${order.id.slice(0, 8)}\n${form.name} · ${form.phone}${form.address ? `\n${form.address}${form.city ? `, ${form.city}` : ""}` : ""}\n\n${lines}\n\nTotal : ${formatPrice(total)}\n\nMerci !`;
+      const msg = `Bonjour Mima Boutique 🌸\n\nCommande #${order.id.slice(0, 8)}\n${form.name.trim()} · ${form.phone.trim()}${form.address.trim() ? `\n${form.address.trim()}${form.city.trim() ? `, ${form.city.trim()}` : ""}` : ""}\n\n${lines}\n\nTotal : ${formatPrice(total)}\n\nMerci !`;
       await markWhatsAppSent(order.id);
       const num = whatsapp.replace(/[^0-9]/g, "");
       window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, "_blank");
@@ -89,47 +139,60 @@ function Panier() {
                 <span>Total</span><span>{formatPrice(total)}</span>
               </div>
               <div className="mt-6 space-y-3">
-                <input
-                  type="text"
-                  placeholder="Nom complet *"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full bg-background border border-border px-3 py-2.5 text-sm focus:outline-none focus:border-foreground"
-                  maxLength={100}
-                  required
-                />
-                <input
-                  type="tel"
-                  placeholder="Téléphone *"
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  className="w-full bg-background border border-border px-3 py-2.5 text-sm focus:outline-none focus:border-foreground"
-                  maxLength={30}
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="Adresse de livraison"
-                  value={form.address}
-                  onChange={(e) => setForm({ ...form, address: e.target.value })}
-                  className="w-full bg-background border border-border px-3 py-2.5 text-sm focus:outline-none focus:border-foreground"
-                  maxLength={200}
-                />
-                <input
-                  type="text"
-                  placeholder="Ville"
-                  value={form.city}
-                  onChange={(e) => setForm({ ...form, city: e.target.value })}
-                  className="w-full bg-background border border-border px-3 py-2.5 text-sm focus:outline-none focus:border-foreground"
-                  maxLength={80}
-                />
-                <textarea
-                  placeholder="Notes (taille, couleur, instructions…)"
-                  value={form.notes}
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  className="w-full bg-background border border-border px-3 py-2.5 text-sm focus:outline-none focus:border-foreground min-h-[70px] resize-none"
-                  maxLength={500}
-                />
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Nom complet *"
+                    value={form.name}
+                    onChange={(e) => { setForm({ ...form, name: e.target.value }); if (errors.name) setErrors((prev) => ({ ...prev, name: undefined })); }}
+                    className={`w-full bg-background border px-3 py-2.5 text-sm focus:outline-none focus:border-foreground ${errors.name ? "border-red-500" : "border-border"}`}
+                    maxLength={100}
+                  />
+                  {errors.name && <p className="text-red-500 text-[11px] mt-1">{errors.name}</p>}
+                </div>
+                <div>
+                  <input
+                    type="tel"
+                    placeholder="Téléphone * (ex: 77 123 45 67)"
+                    value={form.phone}
+                    onChange={(e) => { setForm({ ...form, phone: e.target.value }); if (errors.phone) setErrors((prev) => ({ ...prev, phone: undefined })); }}
+                    className={`w-full bg-background border px-3 py-2.5 text-sm focus:outline-none focus:border-foreground ${errors.phone ? "border-red-500" : "border-border"}`}
+                    maxLength={30}
+                  />
+                  {errors.phone && <p className="text-red-500 text-[11px] mt-1">{errors.phone}</p>}
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Adresse de livraison"
+                    value={form.address}
+                    onChange={(e) => { setForm({ ...form, address: e.target.value }); if (errors.address) setErrors((prev) => ({ ...prev, address: undefined })); }}
+                    className={`w-full bg-background border px-3 py-2.5 text-sm focus:outline-none focus:border-foreground ${errors.address ? "border-red-500" : "border-border"}`}
+                    maxLength={200}
+                  />
+                  {errors.address && <p className="text-red-500 text-[11px] mt-1">{errors.address}</p>}
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Ville"
+                    value={form.city}
+                    onChange={(e) => { setForm({ ...form, city: e.target.value }); if (errors.city) setErrors((prev) => ({ ...prev, city: undefined })); }}
+                    className={`w-full bg-background border px-3 py-2.5 text-sm focus:outline-none focus:border-foreground ${errors.city ? "border-red-500" : "border-border"}`}
+                    maxLength={80}
+                  />
+                  {errors.city && <p className="text-red-500 text-[11px] mt-1">{errors.city}</p>}
+                </div>
+                <div>
+                  <textarea
+                    placeholder="Notes (taille, couleur, instructions…)"
+                    value={form.notes}
+                    onChange={(e) => { setForm({ ...form, notes: e.target.value }); if (errors.notes) setErrors((prev) => ({ ...prev, notes: undefined })); }}
+                    className={`w-full bg-background border px-3 py-2.5 text-sm focus:outline-none focus:border-foreground min-h-[70px] resize-none ${errors.notes ? "border-red-500" : "border-border"}`}
+                    maxLength={500}
+                  />
+                  {errors.notes && <p className="text-red-500 text-[11px] mt-1">{errors.notes}</p>}
+                </div>
               </div>
               <button onClick={orderViaWhatsApp} disabled={sending} className="mt-4 w-full bg-foreground text-background py-4 tracking-luxe text-xs hover:bg-foreground/90 disabled:opacity-60">
                 {sending ? "Envoi…" : "Commander via WhatsApp"}
