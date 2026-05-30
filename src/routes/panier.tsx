@@ -88,7 +88,50 @@ function Panier() {
               <div className="border-t border-border mt-4 pt-4 flex justify-between font-display text-lg">
                 <span>Total</span><span>{formatPrice(total)}</span>
               </div>
-              <button onClick={orderViaWhatsApp} className="mt-6 w-full bg-foreground text-background py-4 tracking-luxe text-xs hover:bg-foreground/90">
+              <div className="mt-6 space-y-3">
+                <input
+                  type="text"
+                  placeholder="Nom complet *"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className="w-full bg-background border border-border px-3 py-2.5 text-sm focus:outline-none focus:border-foreground"
+                  maxLength={100}
+                  required
+                />
+                <input
+                  type="tel"
+                  placeholder="Téléphone *"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  className="w-full bg-background border border-border px-3 py-2.5 text-sm focus:outline-none focus:border-foreground"
+                  maxLength={30}
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Adresse de livraison"
+                  value={form.address}
+                  onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  className="w-full bg-background border border-border px-3 py-2.5 text-sm focus:outline-none focus:border-foreground"
+                  maxLength={200}
+                />
+                <input
+                  type="text"
+                  placeholder="Ville"
+                  value={form.city}
+                  onChange={(e) => setForm({ ...form, city: e.target.value })}
+                  className="w-full bg-background border border-border px-3 py-2.5 text-sm focus:outline-none focus:border-foreground"
+                  maxLength={80}
+                />
+                <textarea
+                  placeholder="Notes (taille, couleur, instructions…)"
+                  value={form.notes}
+                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  className="w-full bg-background border border-border px-3 py-2.5 text-sm focus:outline-none focus:border-foreground min-h-[70px] resize-none"
+                  maxLength={500}
+                />
+              </div>
+              <button onClick={orderViaWhatsApp} disabled={sending} className="mt-4 w-full bg-foreground text-background py-4 tracking-luxe text-xs hover:bg-foreground/90 disabled:opacity-60">
                 Commander via WhatsApp
               </button>
               <button onClick={clear} className="mt-3 w-full text-[11px] tracking-luxe text-muted-foreground hover:text-foreground">Vider le panier</button>
