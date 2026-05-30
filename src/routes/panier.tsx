@@ -10,6 +10,16 @@ import { Minus, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+function validatePhone(phone: string): boolean {
+  const cleaned = phone.replace(/\s+/g, "").replace(/[-.]/g, "");
+  // Sénégal: +2217XXXXXXXX ou 7XXXXXXXX (9 chiffres après l'indicatif ou 9 chiffres locaux)
+  const regex = /^(\+221)?[7][0-9]{8}$/;
+  return regex.test(cleaned);
+}
+
+type FormErrors = Partial<Record<keyof typeof form | string, string>>;
+
+
 export const Route = createFileRoute("/panier")({ component: Panier });
 
 function Panier() {
