@@ -9,21 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Minus, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-
-function validatePhone(phone: string): boolean {
-  const cleaned = phone.replace(/\s+/g, "").replace(/[-.]/g, "");
-  // Sénégal: +2217XXXXXXXX ou 7XXXXXXXX (9 chiffres après l'indicatif ou 9 chiffres locaux)
-  const regex = /^(\+221)?[7][0-9]{8}$/;
-  return regex.test(cleaned);
-}
-
-interface FormErrors {
-  name?: string;
-  phone?: string;
-  address?: string;
-  city?: string;
-  notes?: string;
-}
+import { validateOrderForm, type OrderFormErrors } from "@/lib/order-validation";
 
 export const Route = createFileRoute("/panier")({ component: Panier });
 
@@ -32,39 +18,15 @@ function Panier() {
   const { user } = useAuth();
   const { data: whatsapp = "+221770000000" } = useQuery({ queryKey: ["whatsapp"], queryFn: fetchWhatsAppNumber });
   const [form, setForm] = useState({ name: "", phone: "", address: "", city: "", notes: "" });
-  const [errors, setErrors] = useState<FormErrors>({});
+  const [errors, setErrors] = useState<OrderFormErrors>({});
   const [sending, setSending] = useState(false);
 
   const validateForm = (): boolean => {
-    const newErrors: FormErrors = {};
-
-    if (!form.name.trim()) {
-      newErrors.name = "Le nom complet est requis";
-    } else if (form.name.trim().length < 2) {
-      newErrors.name = "Le nom doit contenir au moins 2 caractères";
-    }
-
-    if (!form.phone.trim()) {
-      newErrors.phone = "Le numéro de téléphone est requis";
-    } else if (!validatePhone(form.phone)) {
-      newErrors.phone = "Format invalide. Ex: 77 123 45 67 ou +221 77 123 45 67";
-    }
-
-    // Adresse complète : si l'une est renseignée, l'autre doit l'être aussi
-    if (form.address.trim() && !form.city.trim()) {
-      newErrors.city = "Veuillez indiquer la ville";
-    }
-    if (form.city.trim() && !form.address.trim()) {
-      newErrors.address = "Veuillez indiquer l'adresse";
-    }
-
-    if (form.notes.trim().length > 500) {
-      newErrors.notes = "Les notes ne doivent pas dépasser 500 caractères";
-    }
-
+    const newErrors = validateOrderForm(form);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
 
   const orderViaWhatsApp = async () => {
     if (!validateForm()) {
