@@ -111,13 +111,19 @@ export async function updateOrderStatus(id: string, status: Order["status"]) {
 // Products admin
 export async function upsertProduct(p: Record<string, unknown>) {
   const { data, error } = await sb.from("products").upsert(p).select().single();
-  if (error) throw error;
+  if (error) {
+    console.error("[upsertProduct] Supabase error:", error);
+    throw error;
+  }
   return data;
 }
 
 export async function deleteProduct(id: string) {
   const { error } = await sb.from("products").delete().eq("id", id);
-  if (error) throw error;
+  if (error) {
+    console.error("[deleteProduct] Supabase error:", error);
+    throw error;
+  }
 }
 
 // Stock movements
