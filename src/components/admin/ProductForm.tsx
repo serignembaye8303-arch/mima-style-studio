@@ -44,7 +44,10 @@ export function ProductForm({ initial }: { initial?: ProductFormValues }) {
     try {
       const path = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
       const { error } = await supabase.storage.from("products").upload(path, file);
-      if (error) throw error;
+      if (error) {
+        console.error("[Upload] storage error:", error);
+        throw new Error(`Upload échoué : ${error.message}`);
+      }
       const { data } = supabase.storage.from("products").getPublicUrl(path);
       return data.publicUrl;
     } finally {
@@ -58,20 +61,29 @@ export function ProductForm({ initial }: { initial?: ProductFormValues }) {
       try {
         const url = await uploadFile(file);
         set("images", [...(f.images ?? []), url]);
+        toast.success(`Image « ${file.name} » téléversée`);
       } catch (e: any) {
-        toast.error(e.message);
+        console.error("[Image upload]", e);
+        toast.error(e.message ?? "Échec du téléversement");
       }
     }
   }
 
   async function handleVideo(file: File | null) {
     if (!file) return;
-    try { set("video_url", await uploadFile(file)); } catch (e: any) { toast.error(e.message); }
+    try {
+      set("video_url", await uploadFile(file));
+      toast.success("Vidéo téléversée");
+    } catch (e: any) {
+      console.error("[Video upload]", e);
+      toast.error(e.message ?? "Échec du téléversement vidéo");
+    }
   }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!f.name || !f.price) { toast.error("Nom et prix requis"); return; }
+    if (!(f.images ?? []).length) { toast.error("Ajoutez au moins une image"); return; }
     setSaving(true);
     try {
       const payload: Record<string, unknown> = {
@@ -79,11 +91,17 @@ export function ProductForm({ initial }: { initial?: ProductFormValues }) {
         slug: f.slug?.trim() || slugify(f.name),
         sale_price: f.sale_price || null,
       };
-      await upsertProduct(payload);
-      toast.success(initial?.id ? "Produit mis à jour" : "Produit créé");
+      console.log("[ProductForm] saving payload:", payload);
+      const saved = await upsertProduct(payload);
+      console.log("[ProductForm] saved:", saved);
+      toast.success(initial?.id ? "✓ Produit mis à jour avec succès" : "✓ Produit créé avec succès");
       nav({ to: "/admin/products" });
     } catch (e: any) {
-      toast.error(e.message);
+      console.error("[ProductForm] save error:", e);
+      const msg = e?.message || e?.error_description || "Erreur inconnue";
+      const details = e?.details ? ` (${e.details})` : "";
+      const hint = e?.hint ? ` — ${e.hint}` : "";
+      toast.error(`Échec : ${msg}${details}${hint}`);
     } finally {
       setSaving(false);
     }
