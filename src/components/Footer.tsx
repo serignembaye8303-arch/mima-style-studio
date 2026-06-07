@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Instagram, Facebook, Lock } from "lucide-react";
 import { CATEGORIES } from "@/lib/format";
+import { useIsStaff } from "@/lib/use-role";
 
 export function Footer() {
   return (
