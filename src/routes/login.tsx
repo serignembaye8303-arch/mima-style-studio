@@ -1,31 +1,79 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { SiteLayout } from "@/components/SiteLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { useIsStaff } from "@/lib/use-role";
 
 export const Route = createFileRoute("/login")({ component: Login });
 
+const STAFF_ROLES = new Set(["admin", "super_admin", "manager"]);
+
 function Login() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { isStaff, isLoading: rolesLoading } = useIsStaff();
   const [email, setEmail] = useState("admin@mima-boutique.com");
   const [password, setPassword] = useState("Azerty10@");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { if (user) navigate({ to: "/compte" }); }, [user, navigate]);
+  useEffect(() => {
+    if (authLoading || !user || rolesLoading) return;
+    navigate({ to: isStaff ? "/admin" : "/login", replace: true });
+  }, [authLoading, user, rolesLoading, isStaff, navigate]);
 
-  const submit = async (e: React.FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      toast.success("Bienvenue 🌸");
-      navigate({ to: "/compte" });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        console.error("[admin-login] sign-in failed", { email, message: error.message, status: error.status });
+        throw error;
+      }
+
+      if (!data.user) {
+        console.error("[admin-login] sign-in returned no user", { email });
+        throw new Error("Connexion incomplète, merci de réessayer.");
+      }
+
+      const { data: roles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", data.user.id);
+
+      if (rolesError) {
+        console.error("[admin-login] role lookup failed", {
+          userId: data.user.id,
+          email: data.user.email,
+          message: rolesError.message,
+        });
+        throw new Error("Impossible de vérifier les permissions administrateur.");
+      }
+
+      const resolvedRoles = (roles ?? []).map((entry) => entry.role);
+      const hasStaffAccess = resolvedRoles.some((role) => STAFF_ROLES.has(role));
+
+      console.info("[admin-login] sign-in succeeded", {
+        userId: data.user.id,
+        email: data.user.email,
+        roles: resolvedRoles,
+        hasStaffAccess,
+      });
+
+      if (!hasStaffAccess) {
+        await supabase.auth.signOut();
+        toast.error("Ce compte n'a pas accès à l’administration.");
+        navigate({ to: "/login", replace: true });
+        return;
+      }
+
+      toast.success("Connexion administrateur réussie");
+      navigate({ to: "/admin", replace: true });
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Erreur");
+      const message = err instanceof Error ? err.message : "Erreur de connexion";
+      toast.error(message === "Invalid login credentials" ? "Identifiants invalides." : message);
     } finally { setLoading(false); }
   };
 
