@@ -4,6 +4,7 @@ import { CATEGORIES } from "@/lib/format";
 import { useIsStaff } from "@/lib/use-role";
 
 export function Footer() {
+  const { isStaff } = useIsStaff();
   return (
     <footer className="mt-32 border-t border-border bg-foreground text-background">
       <div className="max-w-7xl mx-auto px-6 py-16 grid gap-12 md:grid-cols-4">
