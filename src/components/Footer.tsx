@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Instagram, Facebook } from "lucide-react";
+import { Instagram, Facebook, Lock } from "lucide-react";
 import { CATEGORIES } from "@/lib/format";
 
 export function Footer() {
