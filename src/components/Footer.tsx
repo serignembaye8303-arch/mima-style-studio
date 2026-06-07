@@ -1,8 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { Instagram, Facebook, Lock } from "lucide-react";
 import { CATEGORIES } from "@/lib/format";
+import { useIsStaff } from "@/lib/use-role";
 
 export function Footer() {
+  const { isStaff } = useIsStaff();
   return (
     <footer className="mt-32 border-t border-border bg-foreground text-background">
       <div className="max-w-7xl mx-auto px-6 py-16 grid gap-12 md:grid-cols-4">
@@ -54,7 +56,7 @@ export function Footer() {
       </div>
       <div className="border-t border-background/10 py-5 text-center text-[11px] text-background/50 tracking-wider flex items-center justify-center gap-2">
         <span>© {new Date().getFullYear()} Mima Boutique — Tous droits réservés</span>
-        <Link to="/login" className="hover:text-gold transition-colors" title="Connexion administrateur">
+        <Link to={isStaff ? "/admin" : "/login"} className="hover:text-gold transition-colors" title={isStaff ? "Tableau de bord admin" : "Connexion administrateur"}>
           <Lock className="h-3 w-3" />
         </Link>
       </div>
