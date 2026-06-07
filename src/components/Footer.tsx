@@ -52,8 +52,11 @@ export function Footer() {
           </div>
         </div>
       </div>
-      <div className="border-t border-background/10 py-5 text-center text-[11px] text-background/50 tracking-wider">
-        © {new Date().getFullYear()} Mima Boutique — Tous droits réservés
+      <div className="border-t border-background/10 py-5 text-center text-[11px] text-background/50 tracking-wider flex items-center justify-center gap-2">
+        <span>© {new Date().getFullYear()} Mima Boutique — Tous droits réservés</span>
+        <Link to="/login" className="hover:text-gold transition-colors" title="Connexion administrateur">
+          <Lock className="h-3 w-3" />
+        </Link>
       </div>
     </footer>
   );
