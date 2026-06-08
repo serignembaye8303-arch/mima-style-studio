@@ -14,8 +14,8 @@ function Login() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { isStaff, isLoading: rolesLoading } = useIsStaff();
-  const [email, setEmail] = useState("admin@mima-boutique.com");
-  const [password, setPassword] = useState("Azerty10@");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
