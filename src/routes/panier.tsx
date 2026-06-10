@@ -150,11 +150,11 @@ function Panier() {
                   {errors.notes && <p className="text-red-500 text-[11px] mt-1">{errors.notes}</p>}
                 </div>
               </div>
-              <button onClick={orderViaWhatsApp} disabled={sending} className="mt-4 w-full bg-foreground text-background py-4 tracking-luxe text-xs hover:bg-foreground/90 disabled:opacity-60">
-                {sending ? "Envoi…" : "Commander via WhatsApp"}
+              <button onClick={proceedToPayment} disabled={sending} className="mt-4 w-full bg-foreground text-background py-4 tracking-luxe text-xs hover:bg-foreground/90 disabled:opacity-60">
+                {sending ? "Création…" : "Procéder au paiement"}
               </button>
               <button onClick={clear} className="mt-3 w-full text-[11px] tracking-luxe text-muted-foreground hover:text-foreground">Vider le panier</button>
-              <p className="mt-4 text-[11px] text-muted-foreground text-center">Vous recevrez confirmation et lien de paiement par WhatsApp.</p>
+              <p className="mt-4 text-[11px] text-muted-foreground text-center">Wave · Orange Money · Carte · PayPal · Livraison</p>
             </aside>
           </div>
         )}
