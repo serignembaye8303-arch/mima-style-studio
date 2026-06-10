@@ -1,10 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCart, cartItemKey } from "@/lib/cart-context";
 import { SiteLayout } from "@/components/SiteLayout";
 import { formatPrice } from "@/lib/format";
-import { fetchWhatsAppNumber } from "@/lib/products";
-import { createOrder, markWhatsAppSent } from "@/lib/admin-api";
+import { createOrder } from "@/lib/admin-api";
 import { useAuth } from "@/lib/auth-context";
 import { Minus, Plus, X } from "lucide-react";
 import { useState } from "react";
@@ -16,7 +14,7 @@ export const Route = createFileRoute("/panier")({ component: Panier });
 function Panier() {
   const { items, remove, setQuantity, total, clear } = useCart();
   const { user } = useAuth();
-  const { data: whatsapp = "+221770000000" } = useQuery({ queryKey: ["whatsapp"], queryFn: fetchWhatsAppNumber });
+  const navigate = useNavigate();
   const [form, setForm] = useState({ name: "", phone: "", address: "", city: "", notes: "" });
   const [errors, setErrors] = useState<OrderFormErrors>({});
   const [sending, setSending] = useState(false);
