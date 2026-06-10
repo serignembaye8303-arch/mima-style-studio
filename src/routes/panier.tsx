@@ -1,10 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCart, cartItemKey } from "@/lib/cart-context";
 import { SiteLayout } from "@/components/SiteLayout";
 import { formatPrice } from "@/lib/format";
-import { fetchWhatsAppNumber } from "@/lib/products";
-import { createOrder, markWhatsAppSent } from "@/lib/admin-api";
+import { createOrder } from "@/lib/admin-api";
 import { useAuth } from "@/lib/auth-context";
 import { Minus, Plus, X } from "lucide-react";
 import { useState } from "react";
@@ -16,7 +14,7 @@ export const Route = createFileRoute("/panier")({ component: Panier });
 function Panier() {
   const { items, remove, setQuantity, total, clear } = useCart();
   const { user } = useAuth();
-  const { data: whatsapp = "+221770000000" } = useQuery({ queryKey: ["whatsapp"], queryFn: fetchWhatsAppNumber });
+  const navigate = useNavigate();
   const [form, setForm] = useState({ name: "", phone: "", address: "", city: "", notes: "" });
   const [errors, setErrors] = useState<OrderFormErrors>({});
   const [sending, setSending] = useState(false);
@@ -28,7 +26,7 @@ function Panier() {
   };
 
 
-  const orderViaWhatsApp = async () => {
+  const proceedToPayment = async () => {
     if (!validateForm()) {
       toast.error("Veuillez corriger les erreurs avant de continuer");
       return;
@@ -44,13 +42,9 @@ function Panier() {
           price: i.price, quantity: i.quantity, size: i.size, color: i.color,
         })),
       });
-      const lines = items.map((i) => `• ${i.name}${i.size ? ` (${i.size})` : ""}${i.color ? ` — ${i.color}` : ""} × ${i.quantity} = ${formatPrice(i.price * i.quantity)}`).join("\n");
-      const msg = `Bonjour Mima Boutique 🌸\n\nCommande #${order.id.slice(0, 8)}\n${form.name.trim()} · ${form.phone.trim()}${form.address.trim() ? `\n${form.address.trim()}${form.city.trim() ? `, ${form.city.trim()}` : ""}` : ""}\n\n${lines}\n\nTotal : ${formatPrice(total)}\n\nMerci !`;
-      await markWhatsAppSent(order.id);
-      const num = whatsapp.replace(/[^0-9]/g, "");
-      window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, "_blank");
       clear();
-      toast.success("Commande enregistrée !");
+      toast.success("Commande créée ! Choisissez votre moyen de paiement.");
+      navigate({ to: "/paiement/$id", params: { id: order.id } });
     } catch (e: any) { toast.error(e.message ?? "Erreur"); } finally { setSending(false); }
   };
 
@@ -156,11 +150,11 @@ function Panier() {
                   {errors.notes && <p className="text-red-500 text-[11px] mt-1">{errors.notes}</p>}
                 </div>
               </div>
-              <button onClick={orderViaWhatsApp} disabled={sending} className="mt-4 w-full bg-foreground text-background py-4 tracking-luxe text-xs hover:bg-foreground/90 disabled:opacity-60">
-                {sending ? "Envoi…" : "Commander via WhatsApp"}
+              <button onClick={proceedToPayment} disabled={sending} className="mt-4 w-full bg-foreground text-background py-4 tracking-luxe text-xs hover:bg-foreground/90 disabled:opacity-60">
+                {sending ? "Création…" : "Procéder au paiement"}
               </button>
               <button onClick={clear} className="mt-3 w-full text-[11px] tracking-luxe text-muted-foreground hover:text-foreground">Vider le panier</button>
-              <p className="mt-4 text-[11px] text-muted-foreground text-center">Vous recevrez confirmation et lien de paiement par WhatsApp.</p>
+              <p className="mt-4 text-[11px] text-muted-foreground text-center">Wave · Orange Money · Carte · PayPal · Livraison</p>
             </aside>
           </div>
         )}

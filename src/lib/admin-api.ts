@@ -3,6 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 // Use any-typed client until generated types catch up
 const sb = supabase as any;
 
+export type PaymentMethod = "wave" | "orange_money" | "card" | "paypal" | "cash_on_delivery";
+export type PaymentStatus = "unpaid" | "pending_verification" | "paid" | "failed" | "refunded";
+
 export interface Order {
   id: string;
   user_id: string | null;
@@ -16,8 +19,35 @@ export interface Order {
   currency: string;
   notes: string | null;
   whatsapp_sent_at: string | null;
+  payment_method: PaymentMethod | null;
+  payment_status: PaymentStatus;
+  payment_reference: string | null;
+  paid_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export async function setOrderPayment(orderId: string, method: PaymentMethod, reference?: string) {
+  const { error } = await sb.from("orders").update({
+    payment_method: method,
+    payment_status: "pending_verification",
+    payment_reference: reference ?? null,
+  }).eq("id", orderId);
+  if (error) throw error;
+}
+
+export async function updatePaymentStatus(orderId: string, status: PaymentStatus) {
+  const patch: Record<string, unknown> = { payment_status: status };
+  if (status === "paid") patch.paid_at = new Date().toISOString();
+  const { error } = await sb.from("orders").update(patch).eq("id", orderId);
+  if (error) throw error;
+}
+
+export async function fetchOrderPublic(id: string) {
+  // Used by /paiement/$id — RLS allows owner or guest (user_id IS NULL) to read
+  const { data, error } = await sb.from("orders").select("*").eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data as Order | null;
 }
 
 export interface OrderItem {

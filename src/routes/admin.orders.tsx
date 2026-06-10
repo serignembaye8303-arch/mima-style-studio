@@ -49,6 +49,7 @@ function OrdersAdmin() {
                 <th className="text-left px-4 py-3">Client</th>
                 <th className="text-left px-4 py-3">Téléphone</th>
                 <th className="text-right px-4 py-3">Total</th>
+                <th className="text-left px-4 py-3">Paiement</th>
                 <th className="text-left px-4 py-3">Statut</th>
                 <th></th>
               </tr>
@@ -61,6 +62,11 @@ function OrdersAdmin() {
                   <td className="px-4 py-3">{o.customer_phone}</td>
                   <td className="px-4 py-3 text-right font-mono">{formatPrice(o.total)}</td>
                   <td className="px-4 py-3">
+                    <span className={`text-[10px] px-2 py-1 rounded-full ${payColor(o.payment_status)}`}>
+                      {payLabel(o.payment_status)}{o.payment_method ? ` · ${o.payment_method}` : ""}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
                     <select value={o.status} onChange={(e) => changeStatus(o.id, e.target.value as Order["status"])} className="text-xs border rounded px-2 py-1 bg-background">
                       {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                     </select>
@@ -70,7 +76,7 @@ function OrdersAdmin() {
                   </td>
                 </tr>
               ))}
-              {!data?.length && <tr><td colSpan={6} className="px-4 py-16 text-center text-muted-foreground">Aucune commande.</td></tr>}
+              {!data?.length && <tr><td colSpan={7} className="px-4 py-16 text-center text-muted-foreground">Aucune commande.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -80,3 +86,12 @@ function OrdersAdmin() {
 }
 
 const chip = (a: boolean) => `px-3 py-1.5 text-xs tracking-luxe rounded-full border ${a ? "bg-foreground text-background border-foreground" : "bg-background hover:bg-secondary"}`;
+
+const payLabel = (s: string) => ({ unpaid: "Non payé", pending_verification: "Vérif.", paid: "Payé", failed: "Échec", refunded: "Remb." } as Record<string, string>)[s] ?? s;
+const payColor = (s: string) => ({
+  unpaid: "bg-gray-100 text-gray-700",
+  pending_verification: "bg-amber-100 text-amber-800",
+  paid: "bg-green-100 text-green-800",
+  failed: "bg-red-100 text-red-800",
+  refunded: "bg-purple-100 text-purple-800",
+} as Record<string, string>)[s] ?? "bg-gray-100 text-gray-700";

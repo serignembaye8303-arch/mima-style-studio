@@ -19,6 +19,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as ProduitSlugRouteImport } from './routes/produit.$slug'
+import { Route as PaiementIdRouteImport } from './routes/paiement.$id'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminStockRouteImport } from './routes/admin.stock'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
@@ -79,6 +80,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const ProduitSlugRoute = ProduitSlugRouteImport.update({
   id: '/produit/$slug',
   path: '/produit/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PaiementIdRoute = PaiementIdRouteImport.update({
+  id: '/paiement/$id',
+  path: '/paiement/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/stock': typeof AdminStockRoute
   '/admin/users': typeof AdminUsersRoute
+  '/paiement/$id': typeof PaiementIdRoute
   '/produit/$slug': typeof ProduitSlugRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
@@ -176,6 +183,7 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/stock': typeof AdminStockRoute
   '/admin/users': typeof AdminUsersRoute
+  '/paiement/$id': typeof PaiementIdRoute
   '/produit/$slug': typeof ProduitSlugRoute
   '/admin': typeof AdminIndexRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
@@ -200,6 +208,7 @@ export interface FileRoutesById {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/stock': typeof AdminStockRoute
   '/admin/users': typeof AdminUsersRoute
+  '/paiement/$id': typeof PaiementIdRoute
   '/produit/$slug': typeof ProduitSlugRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
@@ -225,6 +234,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/stock'
     | '/admin/users'
+    | '/paiement/$id'
     | '/produit/$slug'
     | '/admin/'
     | '/admin/orders/$id'
@@ -247,6 +257,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/stock'
     | '/admin/users'
+    | '/paiement/$id'
     | '/produit/$slug'
     | '/admin'
     | '/admin/orders/$id'
@@ -270,6 +281,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/stock'
     | '/admin/users'
+    | '/paiement/$id'
     | '/produit/$slug'
     | '/admin/'
     | '/admin/orders/$id'
@@ -286,6 +298,7 @@ export interface RootRouteChildren {
   FavorisRoute: typeof FavorisRoute
   LoginRoute: typeof LoginRoute
   PanierRoute: typeof PanierRoute
+  PaiementIdRoute: typeof PaiementIdRoute
   ProduitSlugRoute: typeof ProduitSlugRoute
 }
 
@@ -359,6 +372,13 @@ declare module '@tanstack/react-router' {
       path: '/produit/$slug'
       fullPath: '/produit/$slug'
       preLoaderRoute: typeof ProduitSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/paiement/$id': {
+      id: '/paiement/$id'
+      path: '/paiement/$id'
+      fullPath: '/paiement/$id'
+      preLoaderRoute: typeof PaiementIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/users': {
@@ -502,18 +522,9 @@ const rootRouteChildren: RootRouteChildren = {
   FavorisRoute: FavorisRoute,
   LoginRoute: LoginRoute,
   PanierRoute: PanierRoute,
+  PaiementIdRoute: PaiementIdRoute,
   ProduitSlugRoute: ProduitSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
