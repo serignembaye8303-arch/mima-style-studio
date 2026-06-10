@@ -26,7 +26,7 @@ function Panier() {
   };
 
 
-  const orderViaWhatsApp = async () => {
+  const proceedToPayment = async () => {
     if (!validateForm()) {
       toast.error("Veuillez corriger les erreurs avant de continuer");
       return;
@@ -42,13 +42,9 @@ function Panier() {
           price: i.price, quantity: i.quantity, size: i.size, color: i.color,
         })),
       });
-      const lines = items.map((i) => `• ${i.name}${i.size ? ` (${i.size})` : ""}${i.color ? ` — ${i.color}` : ""} × ${i.quantity} = ${formatPrice(i.price * i.quantity)}`).join("\n");
-      const msg = `Bonjour Mima Boutique 🌸\n\nCommande #${order.id.slice(0, 8)}\n${form.name.trim()} · ${form.phone.trim()}${form.address.trim() ? `\n${form.address.trim()}${form.city.trim() ? `, ${form.city.trim()}` : ""}` : ""}\n\n${lines}\n\nTotal : ${formatPrice(total)}\n\nMerci !`;
-      await markWhatsAppSent(order.id);
-      const num = whatsapp.replace(/[^0-9]/g, "");
-      window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, "_blank");
       clear();
-      toast.success("Commande enregistrée !");
+      toast.success("Commande créée ! Choisissez votre moyen de paiement.");
+      navigate({ to: "/paiement/$id", params: { id: order.id } });
     } catch (e: any) { toast.error(e.message ?? "Erreur"); } finally { setSending(false); }
   };
 
