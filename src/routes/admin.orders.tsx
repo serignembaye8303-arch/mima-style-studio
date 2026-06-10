@@ -49,6 +49,7 @@ function OrdersAdmin() {
                 <th className="text-left px-4 py-3">Client</th>
                 <th className="text-left px-4 py-3">Téléphone</th>
                 <th className="text-right px-4 py-3">Total</th>
+                <th className="text-left px-4 py-3">Paiement</th>
                 <th className="text-left px-4 py-3">Statut</th>
                 <th></th>
               </tr>
@@ -61,6 +62,11 @@ function OrdersAdmin() {
                   <td className="px-4 py-3">{o.customer_phone}</td>
                   <td className="px-4 py-3 text-right font-mono">{formatPrice(o.total)}</td>
                   <td className="px-4 py-3">
+                    <span className={`text-[10px] px-2 py-1 rounded-full ${payColor(o.payment_status)}`}>
+                      {payLabel(o.payment_status)}{o.payment_method ? ` · ${o.payment_method}` : ""}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
                     <select value={o.status} onChange={(e) => changeStatus(o.id, e.target.value as Order["status"])} className="text-xs border rounded px-2 py-1 bg-background">
                       {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                     </select>
@@ -70,7 +76,7 @@ function OrdersAdmin() {
                   </td>
                 </tr>
               ))}
-              {!data?.length && <tr><td colSpan={6} className="px-4 py-16 text-center text-muted-foreground">Aucune commande.</td></tr>}
+              {!data?.length && <tr><td colSpan={7} className="px-4 py-16 text-center text-muted-foreground">Aucune commande.</td></tr>}
             </tbody>
           </table>
         </div>
