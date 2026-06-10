@@ -86,3 +86,12 @@ function OrdersAdmin() {
 }
 
 const chip = (a: boolean) => `px-3 py-1.5 text-xs tracking-luxe rounded-full border ${a ? "bg-foreground text-background border-foreground" : "bg-background hover:bg-secondary"}`;
+
+const payLabel = (s: string) => ({ unpaid: "Non payé", pending_verification: "Vérif.", paid: "Payé", failed: "Échec", refunded: "Remb." } as Record<string, string>)[s] ?? s;
+const payColor = (s: string) => ({
+  unpaid: "bg-gray-100 text-gray-700",
+  pending_verification: "bg-amber-100 text-amber-800",
+  paid: "bg-green-100 text-green-800",
+  failed: "bg-red-100 text-red-800",
+  refunded: "bg-purple-100 text-purple-800",
+} as Record<string, string>)[s] ?? "bg-gray-100 text-gray-700";
