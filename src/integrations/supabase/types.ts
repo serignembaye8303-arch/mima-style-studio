@@ -166,6 +166,10 @@ export type Database = {
           customer_phone: string
           id: string
           notes: string | null
+          paid_at: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          payment_status: string
           status: Database["public"]["Enums"]["order_status"]
           subtotal: number
           total: number
@@ -182,6 +186,10 @@ export type Database = {
           customer_phone: string
           id?: string
           notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          payment_status?: string
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
           total?: number
@@ -198,6 +206,10 @@ export type Database = {
           customer_phone?: string
           id?: string
           notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          payment_status?: string
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
           total?: number
@@ -353,18 +365,33 @@ export type Database = {
       }
       site_settings: {
         Row: {
+          card_payment_link: string | null
           id: number
+          orange_money_number: string | null
+          payment_instructions: string | null
+          paypal_link: string | null
           updated_at: string
+          wave_number: string | null
           whatsapp_number: string
         }
         Insert: {
+          card_payment_link?: string | null
           id?: number
+          orange_money_number?: string | null
+          payment_instructions?: string | null
+          paypal_link?: string | null
           updated_at?: string
+          wave_number?: string | null
           whatsapp_number?: string
         }
         Update: {
+          card_payment_link?: string | null
           id?: number
+          orange_money_number?: string | null
+          payment_instructions?: string | null
+          paypal_link?: string | null
           updated_at?: string
+          wave_number?: string | null
           whatsapp_number?: string
         }
         Relationships: []
