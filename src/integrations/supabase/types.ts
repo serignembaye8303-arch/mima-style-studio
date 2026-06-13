@@ -460,9 +460,42 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_site_settings: {
+        Row: {
+          card_payment_link: string | null
+          id: number | null
+          orange_money_number: string | null
+          payment_instructions: string | null
+          paypal_link: string | null
+          wave_number: string | null
+          whatsapp_number: string | null
+        }
+        Insert: {
+          card_payment_link?: string | null
+          id?: number | null
+          orange_money_number?: string | null
+          payment_instructions?: string | null
+          paypal_link?: string | null
+          wave_number?: string | null
+          whatsapp_number?: string | null
+        }
+        Update: {
+          card_payment_link?: string | null
+          id?: number | null
+          orange_money_number?: string | null
+          payment_instructions?: string | null
+          paypal_link?: string | null
+          wave_number?: string | null
+          whatsapp_number?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      create_order_with_items: {
+        Args: { p_items: Json; p_order: Json }
+        Returns: Json
+      }
       get_guest_order_with_items: {
         Args: { p_id: string; p_token: string }
         Returns: Json
