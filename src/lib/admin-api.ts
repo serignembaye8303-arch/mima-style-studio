@@ -237,7 +237,7 @@ export async function markNotificationRead(id: string) {
 
 // Settings
 export async function fetchSettings() {
-  const { data } = await sb.from("site_settings").select("*").eq("id", 1).maybeSingle();
+  const { data } = await sb.from("public_site_settings").select("*").eq("id", 1).maybeSingle();
   return data as any;
 }
 export async function updateSettings(patch: Record<string, unknown>) {
