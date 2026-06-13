@@ -158,6 +158,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          access_token: string
           created_at: string
           currency: string
           customer_address: string | null
@@ -178,6 +179,7 @@ export type Database = {
           whatsapp_sent_at: string | null
         }
         Insert: {
+          access_token?: string
           created_at?: string
           currency?: string
           customer_address?: string | null
@@ -198,6 +200,7 @@ export type Database = {
           whatsapp_sent_at?: string | null
         }
         Update: {
+          access_token?: string
           created_at?: string
           currency?: string
           customer_address?: string | null
@@ -460,6 +463,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_guest_order_with_items: {
+        Args: { p_id: string; p_token: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -468,6 +475,15 @@ export type Database = {
         Returns: boolean
       }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
+      set_guest_order_payment: {
+        Args: {
+          p_id: string
+          p_method: string
+          p_reference: string
+          p_token: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "client" | "super_admin" | "manager"

@@ -23,16 +23,26 @@ export interface Order {
   payment_status: PaymentStatus;
   payment_reference: string | null;
   paid_at: string | null;
+  access_token?: string;
   created_at: string;
   updated_at: string;
 }
 
 export async function setOrderPayment(orderId: string, method: PaymentMethod, reference?: string) {
+  // Used by authenticated owners (RLS enforces auth.uid() = user_id)
   const { error } = await sb.from("orders").update({
     payment_method: method,
     payment_status: "pending_verification",
     payment_reference: reference ?? null,
   }).eq("id", orderId);
+  if (error) throw error;
+}
+
+// Guest-safe variant via SECURITY DEFINER RPC (per-order secret token gates access)
+export async function setGuestOrderPayment(orderId: string, token: string, method: PaymentMethod, reference?: string) {
+  const { error } = await sb.rpc("set_guest_order_payment", {
+    p_id: orderId, p_token: token, p_method: method, p_reference: reference ?? "",
+  });
   if (error) throw error;
 }
 
@@ -43,11 +53,11 @@ export async function updatePaymentStatus(orderId: string, status: PaymentStatus
   if (error) throw error;
 }
 
-export async function fetchOrderPublic(id: string) {
-  // Used by /paiement/$id — RLS allows owner or guest (user_id IS NULL) to read
-  const { data, error } = await sb.from("orders").select("*").eq("id", id).maybeSingle();
+export async function fetchGuestOrder(id: string, token: string): Promise<{ order: Order; items: OrderItem[] } | null> {
+  const { data, error } = await sb.rpc("get_guest_order_with_items", { p_id: id, p_token: token });
   if (error) throw error;
-  return data as Order | null;
+  if (!data) return null;
+  return { order: data.order as Order, items: (data.items ?? []) as OrderItem[] };
 }
 
 export interface OrderItem {

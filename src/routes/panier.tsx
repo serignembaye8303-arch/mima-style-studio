@@ -44,7 +44,8 @@ function Panier() {
       });
       clear();
       toast.success("Commande créée ! Choisissez votre moyen de paiement.");
-      navigate({ to: "/paiement/$id", params: { id: order.id } });
+      const token = (order as any).access_token as string | undefined;
+      navigate({ to: "/paiement/$id", params: { id: order.id }, search: token ? { t: token } : {} });
     } catch (e: any) { toast.error(e.message ?? "Erreur"); } finally { setSending(false); }
   };
 

@@ -1,17 +1,19 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { SiteLayout } from "@/components/SiteLayout";
-import { fetchOrder } from "@/lib/admin-api";
+import { fetchOrder, fetchGuestOrder, setGuestOrderPayment } from "@/lib/admin-api";
 import { setOrderPayment, markWhatsAppSent, type PaymentMethod } from "@/lib/admin-api";
 import { fetchSettings } from "@/lib/admin-api";
 import { fetchWhatsAppNumber } from "@/lib/products";
 import { formatPrice } from "@/lib/format";
+import { useAuth } from "@/lib/auth-context";
 import { useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, Clock, Copy, ExternalLink, Loader2, XCircle } from "lucide-react";
 
 export const Route = createFileRoute("/paiement/$id")({
   head: () => ({ meta: [{ title: "Paiement — Mima Boutique" }, { name: "robots", content: "noindex" }] }),
+  validateSearch: (s: Record<string, unknown>) => ({ t: typeof s.t === "string" ? s.t : undefined }),
   component: PaymentPage,
 });
 
@@ -19,8 +21,14 @@ type Method = { id: PaymentMethod; label: string; emoji: string; type: "phone" |
 
 function PaymentPage() {
   const { id } = Route.useParams();
+  const { t: token } = Route.useSearch();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const { data: orderData, refetch } = useQuery({ queryKey: ["order-public", id], queryFn: () => fetchOrder(id), refetchInterval: 8000 });
+  const { data: orderData, refetch } = useQuery({
+    queryKey: ["order-public", id, token ?? "owner"],
+    queryFn: () => (token ? fetchGuestOrder(id, token) : fetchOrder(id)),
+    refetchInterval: 8000,
+  });
   const { data: settings } = useQuery({ queryKey: ["settings"], queryFn: fetchSettings });
   const { data: whatsapp = "+221770000000" } = useQuery({ queryKey: ["whatsapp"], queryFn: fetchWhatsAppNumber });
 
@@ -85,12 +93,16 @@ function PaymentPage() {
     if (!selected) return;
     setSubmitting(true);
     try {
-      await setOrderPayment(order!.id, selected, reference.trim() || undefined);
+      if (token) {
+        await setGuestOrderPayment(order!.id, token, selected, reference.trim() || undefined);
+      } else {
+        await setOrderPayment(order!.id, selected, reference.trim() || undefined);
+      }
       // Notify shop via WhatsApp
       const info = methodInfo(selected);
       const lines = items.map((i) => `• ${i.product_name}${i.size ? ` (${i.size})` : ""}${i.color ? ` — ${i.color}` : ""} × ${i.quantity}`).join("\n");
       const msg = `Bonjour Mima Boutique 🌸\n\nCommande #${order!.id.slice(0, 8)}\n${order!.customer_name} · ${order!.customer_phone}\nMontant : ${formatPrice(order!.total)}\nPaiement : ${selected.toUpperCase()}${reference.trim() ? ` — Réf : ${reference.trim()}` : ""}\n\n${lines}\n\nMerci de confirmer la réception du paiement.`;
-      await markWhatsAppSent(order!.id);
+      if (user) await markWhatsAppSent(order!.id);
       const num = whatsapp.replace(/[^0-9]/g, "");
       window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, "_blank");
       toast.success("Paiement signalé. Nous vérifions et confirmons sous peu.");
