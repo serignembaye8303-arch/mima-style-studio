@@ -1,17 +1,19 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { SiteLayout } from "@/components/SiteLayout";
-import { fetchOrder } from "@/lib/admin-api";
+import { fetchOrder, fetchGuestOrder, setGuestOrderPayment } from "@/lib/admin-api";
 import { setOrderPayment, markWhatsAppSent, type PaymentMethod } from "@/lib/admin-api";
 import { fetchSettings } from "@/lib/admin-api";
 import { fetchWhatsAppNumber } from "@/lib/products";
 import { formatPrice } from "@/lib/format";
+import { useAuth } from "@/lib/auth-context";
 import { useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, Clock, Copy, ExternalLink, Loader2, XCircle } from "lucide-react";
 
 export const Route = createFileRoute("/paiement/$id")({
   head: () => ({ meta: [{ title: "Paiement — Mima Boutique" }, { name: "robots", content: "noindex" }] }),
+  validateSearch: (s: Record<string, unknown>) => ({ t: typeof s.t === "string" ? s.t : undefined }),
   component: PaymentPage,
 });
 
@@ -19,8 +21,14 @@ type Method = { id: PaymentMethod; label: string; emoji: string; type: "phone" |
 
 function PaymentPage() {
   const { id } = Route.useParams();
+  const { t: token } = Route.useSearch();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const { data: orderData, refetch } = useQuery({ queryKey: ["order-public", id], queryFn: () => fetchOrder(id), refetchInterval: 8000 });
+  const { data: orderData, refetch } = useQuery({
+    queryKey: ["order-public", id, token ?? "owner"],
+    queryFn: () => (token ? fetchGuestOrder(id, token) : fetchOrder(id)),
+    refetchInterval: 8000,
+  });
   const { data: settings } = useQuery({ queryKey: ["settings"], queryFn: fetchSettings });
   const { data: whatsapp = "+221770000000" } = useQuery({ queryKey: ["whatsapp"], queryFn: fetchWhatsAppNumber });
 
