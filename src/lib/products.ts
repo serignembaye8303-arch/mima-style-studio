@@ -39,6 +39,6 @@ export async function fetchProductBySlug(slug: string): Promise<Product | null> 
 }
 
 export async function fetchWhatsAppNumber(): Promise<string> {
-  const { data } = await supabase.from("site_settings").select("whatsapp_number").eq("id", 1).maybeSingle();
+  const { data } = await supabase.from("public_site_settings").select("whatsapp_number").eq("id", 1).maybeSingle();
   return data?.whatsapp_number ?? "+221770000000";
 }

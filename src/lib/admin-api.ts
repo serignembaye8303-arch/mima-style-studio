@@ -91,38 +91,27 @@ export async function createOrder(input: {
   items: CartLineInput[];
   user_id?: string | null;
 }) {
-  const subtotal = input.items.reduce((s, i) => s + i.price * i.quantity, 0);
-  const { data: order, error } = await sb
-    .from("orders")
-    .insert({
-      user_id: input.user_id ?? null,
+  const { data, error } = await sb.rpc("create_order_with_items", {
+    p_order: {
       customer_name: input.customer_name,
       customer_phone: input.customer_phone,
       customer_address: input.customer_address ?? null,
       customer_city: input.customer_city ?? null,
       notes: input.notes ?? null,
-      subtotal,
-      total: subtotal,
       currency: "XOF",
-      status: "pending",
-    })
-    .select()
-    .single();
+    },
+    p_items: input.items.map((i) => ({
+      product_id: i.product_id,
+      product_name: i.product_name,
+      product_image: i.product_image ?? null,
+      price: i.price,
+      quantity: i.quantity,
+      size: i.size ?? null,
+      color: i.color ?? null,
+    })),
+  });
   if (error) throw error;
-
-  const items = input.items.map((i) => ({
-    order_id: order.id,
-    product_id: i.product_id,
-    product_name: i.product_name,
-    product_image: i.product_image ?? null,
-    price: i.price,
-    quantity: i.quantity,
-    size: i.size ?? null,
-    color: i.color ?? null,
-  }));
-  const { error: itemsErr } = await sb.from("order_items").insert(items);
-  if (itemsErr) throw itemsErr;
-  return order as Order;
+  return data as unknown as Order;
 }
 
 export async function markWhatsAppSent(orderId: string) {
@@ -248,7 +237,7 @@ export async function markNotificationRead(id: string) {
 
 // Settings
 export async function fetchSettings() {
-  const { data } = await sb.from("site_settings").select("*").eq("id", 1).maybeSingle();
+  const { data } = await sb.from("public_site_settings").select("*").eq("id", 1).maybeSingle();
   return data as any;
 }
 export async function updateSettings(patch: Record<string, unknown>) {
