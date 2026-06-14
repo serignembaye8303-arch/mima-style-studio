@@ -370,9 +370,13 @@ export type Database = {
         Row: {
           card_payment_link: string | null
           id: number
+          marquee_enabled: boolean
+          marquee_items: string
           orange_money_number: string | null
           payment_instructions: string | null
           paypal_link: string | null
+          top_bar_enabled: boolean
+          top_bar_text: string
           updated_at: string
           wave_number: string | null
           whatsapp_number: string
@@ -380,9 +384,13 @@ export type Database = {
         Insert: {
           card_payment_link?: string | null
           id?: number
+          marquee_enabled?: boolean
+          marquee_items?: string
           orange_money_number?: string | null
           payment_instructions?: string | null
           paypal_link?: string | null
+          top_bar_enabled?: boolean
+          top_bar_text?: string
           updated_at?: string
           wave_number?: string | null
           whatsapp_number?: string
@@ -390,9 +398,13 @@ export type Database = {
         Update: {
           card_payment_link?: string | null
           id?: number
+          marquee_enabled?: boolean
+          marquee_items?: string
           orange_money_number?: string | null
           payment_instructions?: string | null
           paypal_link?: string | null
+          top_bar_enabled?: boolean
+          top_bar_text?: string
           updated_at?: string
           wave_number?: string | null
           whatsapp_number?: string
@@ -464,27 +476,39 @@ export type Database = {
         Row: {
           card_payment_link: string | null
           id: number | null
+          marquee_enabled: boolean | null
+          marquee_items: string | null
           orange_money_number: string | null
           payment_instructions: string | null
           paypal_link: string | null
+          top_bar_enabled: boolean | null
+          top_bar_text: string | null
           wave_number: string | null
           whatsapp_number: string | null
         }
         Insert: {
           card_payment_link?: string | null
           id?: number | null
+          marquee_enabled?: boolean | null
+          marquee_items?: string | null
           orange_money_number?: string | null
           payment_instructions?: string | null
           paypal_link?: string | null
+          top_bar_enabled?: boolean | null
+          top_bar_text?: string | null
           wave_number?: string | null
           whatsapp_number?: string | null
         }
         Update: {
           card_payment_link?: string | null
           id?: number | null
+          marquee_enabled?: boolean | null
+          marquee_items?: string | null
           orange_money_number?: string | null
           payment_instructions?: string | null
           paypal_link?: string | null
+          top_bar_enabled?: boolean | null
+          top_bar_text?: string | null
           wave_number?: string | null
           whatsapp_number?: string | null
         }
