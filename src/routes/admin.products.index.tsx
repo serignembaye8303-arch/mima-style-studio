@@ -8,7 +8,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { BulkImportDialog } from "@/components/admin/BulkImportDialog";
 
-export const Route = createFileRoute("/admin/products")({ component: ProductsAdmin });
+export const Route = createFileRoute("/admin/products/")({ component: ProductsAdmin });
 
 function ProductsAdmin() {
   const qc = useQueryClient();
