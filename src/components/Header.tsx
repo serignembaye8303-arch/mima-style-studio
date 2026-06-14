@@ -1,10 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { Heart, ShoppingBag, Search, User, Menu, X, LayoutDashboard } from "lucide-react";
+import { Heart, ShoppingBag, Search, User, Menu, X, LayoutDashboard, Sparkles } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { useIsStaff } from "@/lib/use-role";
 import { CATEGORIES } from "@/lib/format";
+import { fetchSettings } from "@/lib/admin-api";
 import logo from "@/assets/logo-mima.png";
 
 export function Header() {
@@ -12,12 +14,34 @@ export function Header() {
   const { user } = useAuth();
   const { isStaff } = useIsStaff();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { data: settings } = useQuery({ queryKey: ["settings"], queryFn: fetchSettings, staleTime: 60_000 });
+
+  const topBarEnabled = settings?.top_bar_enabled ?? true;
+  const topBarText = settings?.top_bar_text ?? "Livraison offerte dès 80 000 FCFA · Commande par WhatsApp en 1 clic";
+  const marqueeEnabled = settings?.marquee_enabled ?? true;
+  const marqueeItems: string[] = (settings?.marquee_items ?? "Livraison rapide|Commande WhatsApp|Paiement à la livraison|Pièces exclusives|Service sur mesure")
+    .split("|").map((s: string) => s.trim()).filter(Boolean);
 
   return (
     <header className="sticky top-0 z-40 bg-background/85 backdrop-blur-md border-b border-border/60">
-      <div className="hidden md:block bg-foreground text-background text-[10px] tracking-luxe text-center py-2">
-        Livraison offerte dès 80 000 FCFA · Commande par WhatsApp en 1 clic
-      </div>
+      {topBarEnabled && topBarText && (
+        <div className="hidden md:block bg-foreground text-background text-[10px] tracking-luxe text-center py-2">
+          {topBarText}
+        </div>
+      )}
+      {marqueeEnabled && marqueeItems.length > 0 && (
+        <div className="border-b border-border/60 overflow-hidden bg-background">
+          <div className="flex whitespace-nowrap animate-marquee py-2 text-[10px] tracking-luxe">
+            {Array.from({ length: 2 }).map((_, k) => (
+              <div key={k} className="flex shrink-0">
+                {marqueeItems.map((t) => (
+                  <span key={t + k} className="px-6 flex items-center gap-2"><Sparkles className="h-3 w-3 text-gold" />{t}</span>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
         <button className="md:hidden p-2 -ml-2" onClick={() => setMenuOpen(true)} aria-label="Menu">
           <Menu className="h-5 w-5" />
