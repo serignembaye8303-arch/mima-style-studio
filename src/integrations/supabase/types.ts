@@ -78,9 +78,13 @@ export type Database = {
           audience: string
           body: string | null
           created_at: string
+          currency: string | null
           id: string
           is_read: boolean
           link: string | null
+          media_type: string | null
+          media_url: string | null
+          price: number | null
           title: string
           type: string
           user_id: string | null
@@ -89,9 +93,13 @@ export type Database = {
           audience?: string
           body?: string | null
           created_at?: string
+          currency?: string | null
           id?: string
           is_read?: boolean
           link?: string | null
+          media_type?: string | null
+          media_url?: string | null
+          price?: number | null
           title: string
           type?: string
           user_id?: string | null
@@ -100,9 +108,13 @@ export type Database = {
           audience?: string
           body?: string | null
           created_at?: string
+          currency?: string | null
           id?: string
           is_read?: boolean
           link?: string | null
+          media_type?: string | null
+          media_url?: string | null
+          price?: number | null
           title?: string
           type?: string
           user_id?: string | null
