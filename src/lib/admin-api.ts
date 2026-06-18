@@ -220,13 +220,27 @@ export async function fetchNotifications(userId?: string) {
   return (data ?? []) as any[];
 }
 
-export async function broadcastNotification(input: { title: string; body?: string; audience: "all" | "staff"; link?: string; type?: string }) {
+export async function broadcastNotification(input: {
+  title: string;
+  body?: string;
+  audience: "all" | "staff";
+  link?: string;
+  type?: string;
+  media_url?: string | null;
+  media_type?: "image" | "video" | null;
+  price?: number | null;
+  currency?: string | null;
+}) {
   const { error } = await sb.from("notifications").insert({
     title: input.title,
     body: input.body ?? null,
     audience: input.audience,
     link: input.link ?? null,
     type: input.type ?? "promo",
+    media_url: input.media_url ?? null,
+    media_type: input.media_type ?? null,
+    price: input.price ?? null,
+    currency: input.currency ?? (input.price ? "XOF" : null),
   });
   if (error) throw error;
 }
