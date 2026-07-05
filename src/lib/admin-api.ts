@@ -232,6 +232,8 @@ export async function broadcastNotification(input: {
   media_type?: "image" | "video" | null;
   media_items?: NotifMediaItem[];
   price?: number | null;
+  compare_at_price?: number | null;
+  discount_percent?: number | null;
   currency?: string | null;
 }) {
   const items = input.media_items ?? [];
@@ -246,8 +248,10 @@ export async function broadcastNotification(input: {
     media_type: input.media_type ?? first?.type ?? null,
     media_items: items as any,
     price: input.price ?? null,
+    compare_at_price: input.compare_at_price ?? null,
+    discount_percent: input.discount_percent ?? null,
     currency: input.currency ?? (input.price ? "XOF" : null),
-  });
+  } as any);
   if (error) throw error;
 }
 
