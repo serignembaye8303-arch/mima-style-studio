@@ -29,7 +29,22 @@ function NotifAdmin() {
   const [overIndex, setOverIndex] = useState<number | null>(null);
 
   const [price, setPrice] = useState<string>("");
+  const [compareAt, setCompareAt] = useState<string>("");
+  const [discount, setDiscount] = useState<string>("");
   const [currency, setCurrency] = useState<string>("XOF");
+
+  const priceNum = price ? Number(price) : null;
+  const compareNum = compareAt ? Number(compareAt) : null;
+  const discountNum = discount ? Number(discount) : null;
+  // Auto-compute discount % when both prices given and no manual override
+  const autoDiscount =
+    priceNum && compareNum && compareNum > priceNum && !discountNum
+      ? Math.round(((compareNum - priceNum) / compareNum) * 100)
+      : null;
+  const effectiveDiscount = discountNum ?? autoDiscount;
+  const finalPrice =
+    priceNum ??
+    (compareNum && discountNum ? Math.round(compareNum * (1 - discountNum / 100)) : null);
 
   async function handleAiGenerate() {
     setAiLoading(true);
@@ -99,12 +114,14 @@ function NotifAdmin() {
         audience,
         link,
         media_items: mediaItems,
-        price: price ? Number(price) : null,
-        currency: price ? currency : null,
+        price: finalPrice,
+        compare_at_price: compareNum,
+        discount_percent: effectiveDiscount,
+        currency: finalPrice || compareNum ? currency : null,
       });
       toast.success("Notification envoyée");
       setTitle(""); setBody(""); setLink(""); setAiPrompt("");
-      setMediaItems([]); setPrice("");
+      setMediaItems([]); setPrice(""); setCompareAt(""); setDiscount("");
       qc.invalidateQueries({ queryKey: ["notifs-admin"] });
     } catch (e: any) {
       toast.error(e.message);
@@ -244,27 +261,74 @@ function NotifAdmin() {
           </TabsContent>
 
           <TabsContent value="price" className="space-y-3 mt-4">
-            <div className="grid sm:grid-cols-[1fr_auto] gap-3">
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="Prix (optionnel)"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                className="border rounded px-3 py-2"
-              />
-              <select
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-                className="border rounded px-3 py-2"
-              >
-                <option value="XOF">XOF (FCFA)</option>
-                <option value="EUR">EUR</option>
-                <option value="USD">USD</option>
-              </select>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <label className="space-y-1">
+                <span className="text-xs text-muted-foreground">Prix promo</span>
+                <input
+                  type="number" min="0" step="0.01"
+                  placeholder="Ex: 12000"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  className="w-full border rounded px-3 py-2"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-xs text-muted-foreground">Prix d'origine (barré)</span>
+                <input
+                  type="number" min="0" step="0.01"
+                  placeholder="Ex: 18000"
+                  value={compareAt}
+                  onChange={(e) => setCompareAt(e.target.value)}
+                  className="w-full border rounded px-3 py-2"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-xs text-muted-foreground">Remise (%)</span>
+                <input
+                  type="number" min="0" max="100" step="1"
+                  placeholder={autoDiscount ? `Auto: ${autoDiscount}%` : "Ex: 30"}
+                  value={discount}
+                  onChange={(e) => setDiscount(e.target.value)}
+                  className="w-full border rounded px-3 py-2"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-xs text-muted-foreground">Devise</span>
+                <select
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                  className="w-full border rounded px-3 py-2"
+                >
+                  <option value="XOF">XOF (FCFA)</option>
+                  <option value="EUR">EUR</option>
+                  <option value="USD">USD</option>
+                </select>
+              </label>
             </div>
-            <p className="text-xs text-muted-foreground">Affiche un prix dans la notification (ex: promo, nouveau produit).</p>
+
+            {(finalPrice || compareNum || effectiveDiscount) && (
+              <div className="bg-secondary/30 border rounded p-3 flex items-baseline gap-3 flex-wrap">
+                <span className="text-[10px] tracking-luxe text-muted-foreground uppercase">Aperçu</span>
+                {finalPrice != null && (
+                  <span className="text-lg font-mono text-gold">
+                    {finalPrice.toLocaleString("fr-FR")} {currency}
+                  </span>
+                )}
+                {compareNum != null && finalPrice != null && compareNum > finalPrice && (
+                  <span className="text-sm line-through text-muted-foreground">
+                    {compareNum.toLocaleString("fr-FR")} {currency}
+                  </span>
+                )}
+                {effectiveDiscount != null && (
+                  <span className="bg-gold text-background text-[10px] tracking-luxe px-2 py-0.5 rounded">
+                    -{effectiveDiscount}%
+                  </span>
+                )}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Renseigne le prix promo, le prix barré, ou une remise en %. Les autres champs sont calculés automatiquement.
+            </p>
           </TabsContent>
         </Tabs>
 
@@ -295,9 +359,23 @@ function NotifAdmin() {
                     ? <video src={n.media_url} className="mt-2 max-h-32 rounded border" controls />
                     : <img src={n.media_url} alt="" className="mt-2 max-h-32 rounded border" />
                 )}
-                {n.price != null && (
-                  <p className="text-xs font-medium text-gold mt-1">
-                    {Number(n.price).toLocaleString("fr-FR")} {n.currency ?? "XOF"}
+                {(n.price != null || n.compare_at_price != null) && (
+                  <p className="mt-1 flex items-baseline gap-2 flex-wrap">
+                    {n.price != null && (
+                      <span className="text-xs font-medium text-gold">
+                        {Number(n.price).toLocaleString("fr-FR")} {n.currency ?? "XOF"}
+                      </span>
+                    )}
+                    {n.compare_at_price != null && (
+                      <span className="text-[10px] line-through text-muted-foreground">
+                        {Number(n.compare_at_price).toLocaleString("fr-FR")} {n.currency ?? "XOF"}
+                      </span>
+                    )}
+                    {n.discount_percent != null && (
+                      <span className="bg-gold text-background text-[9px] tracking-luxe px-1.5 py-0.5 rounded">
+                        -{Number(n.discount_percent)}%
+                      </span>
+                    )}
                   </p>
                 )}
                 <p className="text-[10px] text-muted-foreground mt-1">{n.audience} · {new Date(n.created_at).toLocaleString("fr-FR")}</p>
