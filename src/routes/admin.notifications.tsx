@@ -114,12 +114,14 @@ function NotifAdmin() {
         audience,
         link,
         media_items: mediaItems,
-        price: price ? Number(price) : null,
-        currency: price ? currency : null,
+        price: finalPrice,
+        compare_at_price: compareNum,
+        discount_percent: effectiveDiscount,
+        currency: finalPrice || compareNum ? currency : null,
       });
       toast.success("Notification envoyée");
       setTitle(""); setBody(""); setLink(""); setAiPrompt("");
-      setMediaItems([]); setPrice("");
+      setMediaItems([]); setPrice(""); setCompareAt(""); setDiscount("");
       qc.invalidateQueries({ queryKey: ["notifs-admin"] });
     } catch (e: any) {
       toast.error(e.message);
