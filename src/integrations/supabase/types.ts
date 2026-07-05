@@ -82,6 +82,7 @@ export type Database = {
           id: string
           is_read: boolean
           link: string | null
+          media_items: Json
           media_type: string | null
           media_url: string | null
           price: number | null
@@ -97,6 +98,7 @@ export type Database = {
           id?: string
           is_read?: boolean
           link?: string | null
+          media_items?: Json
           media_type?: string | null
           media_url?: string | null
           price?: number | null
@@ -112,6 +114,7 @@ export type Database = {
           id?: string
           is_read?: boolean
           link?: string | null
+          media_items?: Json
           media_type?: string | null
           media_url?: string | null
           price?: number | null
