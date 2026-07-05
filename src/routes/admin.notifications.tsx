@@ -359,9 +359,23 @@ function NotifAdmin() {
                     ? <video src={n.media_url} className="mt-2 max-h-32 rounded border" controls />
                     : <img src={n.media_url} alt="" className="mt-2 max-h-32 rounded border" />
                 )}
-                {n.price != null && (
-                  <p className="text-xs font-medium text-gold mt-1">
-                    {Number(n.price).toLocaleString("fr-FR")} {n.currency ?? "XOF"}
+                {(n.price != null || n.compare_at_price != null) && (
+                  <p className="mt-1 flex items-baseline gap-2 flex-wrap">
+                    {n.price != null && (
+                      <span className="text-xs font-medium text-gold">
+                        {Number(n.price).toLocaleString("fr-FR")} {n.currency ?? "XOF"}
+                      </span>
+                    )}
+                    {n.compare_at_price != null && (
+                      <span className="text-[10px] line-through text-muted-foreground">
+                        {Number(n.compare_at_price).toLocaleString("fr-FR")} {n.currency ?? "XOF"}
+                      </span>
+                    )}
+                    {n.discount_percent != null && (
+                      <span className="bg-gold text-background text-[9px] tracking-luxe px-1.5 py-0.5 rounded">
+                        -{Number(n.discount_percent)}%
+                      </span>
+                    )}
                   </p>
                 )}
                 <p className="text-[10px] text-muted-foreground mt-1">{n.audience} · {new Date(n.created_at).toLocaleString("fr-FR")}</p>
