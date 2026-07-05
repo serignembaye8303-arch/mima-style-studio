@@ -164,45 +164,82 @@ function NotifAdmin() {
           </TabsContent>
 
           <TabsContent value="media" className="space-y-3 mt-4">
-            {mediaUrl ? (
-              <div className="relative inline-block">
-                {mediaType === "video" ? (
-                  <video src={mediaUrl} className="max-h-64 rounded border" controls />
-                ) : (
-                  <img src={mediaUrl} alt="Aperçu" className="max-h-64 rounded border" />
-                )}
-                <button
-                  type="button"
-                  onClick={() => { setMediaUrl(null); setMediaType(null); }}
-                  className="absolute -top-2 -right-2 bg-foreground text-background rounded-full p-1"
-                  aria-label="Retirer le média"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ) : (
-              <label className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8 cursor-pointer hover:bg-secondary/30 transition">
-                {uploading ? (
-                  <Loader2 className="h-6 w-6 animate-spin text-gold" />
-                ) : (
-                  <>
-                    <Upload className="h-6 w-6 text-muted-foreground mb-2" />
-                    <p className="text-sm">Cliquer pour ajouter une photo ou une vidéo</p>
-                    <p className="text-xs text-muted-foreground mt-1">JPG, PNG, MP4, WebM — max 25 Mo</p>
-                  </>
-                )}
-                <input
-                  type="file"
-                  accept="image/*,video/*"
-                  className="hidden"
-                  disabled={uploading}
-                  onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])}
-                />
-              </label>
+            {mediaItems.length > 0 && (
+              <>
+                <p className="text-xs text-muted-foreground">
+                  Glisser-déposer pour réordonner. Le premier média sert d'aperçu principal.
+                </p>
+                <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {mediaItems.map((m, i) => (
+                    <li
+                      key={m.url}
+                      draggable
+                      onDragStart={(e) => { setDragIndex(i); e.dataTransfer.effectAllowed = "move"; }}
+                      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (overIndex !== i) setOverIndex(i); }}
+                      onDragLeave={() => { if (overIndex === i) setOverIndex(null); }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (dragIndex !== null) reorder(dragIndex, i);
+                        setDragIndex(null); setOverIndex(null);
+                      }}
+                      onDragEnd={() => { setDragIndex(null); setOverIndex(null); }}
+                      className={`relative group border rounded-lg overflow-hidden bg-secondary/20 cursor-move transition ${
+                        overIndex === i ? "ring-2 ring-gold" : ""
+                      } ${dragIndex === i ? "opacity-40" : ""}`}
+                    >
+                      <div className="aspect-square w-full">
+                        {m.type === "video" ? (
+                          <video src={m.url} className="w-full h-full object-cover" muted />
+                        ) : (
+                          <img src={m.url} alt="" className="w-full h-full object-cover" />
+                        )}
+                      </div>
+                      <div className="absolute top-1 left-1 bg-foreground/80 text-background text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1">
+                        <GripVertical className="h-3 w-3" /> {i + 1}
+                      </div>
+                      {i === 0 && (
+                        <div className="absolute bottom-1 left-1 bg-gold text-background text-[10px] px-1.5 py-0.5 rounded tracking-luxe">
+                          Principal
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeMedia(i)}
+                        className="absolute top-1 right-1 bg-foreground text-background rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
+                        aria-label="Retirer"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
+
+            <label className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 cursor-pointer hover:bg-secondary/30 transition">
+              {uploading ? (
+                <Loader2 className="h-6 w-6 animate-spin text-gold" />
+              ) : (
+                <>
+                  <Upload className="h-6 w-6 text-muted-foreground mb-2" />
+                  <p className="text-sm">Cliquer pour ajouter des photos ou vidéos</p>
+                  <p className="text-xs text-muted-foreground mt-1">JPG, PNG, MP4, WebM — max 25 Mo / fichier</p>
+                </>
+              )}
+              <input
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                className="hidden"
+                disabled={uploading}
+                onChange={(e) => { handleUploadFiles(e.target.files); e.target.value = ""; }}
+              />
+            </label>
+
             <div className="flex gap-4 text-xs text-muted-foreground">
               <span className="inline-flex items-center gap-1"><ImageIcon className="h-3 w-3" /> Image</span>
               <span className="inline-flex items-center gap-1"><Video className="h-3 w-3" /> Vidéo</span>
+              <span className="inline-flex items-center gap-1"><GripVertical className="h-3 w-3" /> Glisser pour réordonner</span>
             </div>
           </TabsContent>
 
