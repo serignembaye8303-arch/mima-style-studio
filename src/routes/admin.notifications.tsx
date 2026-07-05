@@ -29,7 +29,22 @@ function NotifAdmin() {
   const [overIndex, setOverIndex] = useState<number | null>(null);
 
   const [price, setPrice] = useState<string>("");
+  const [compareAt, setCompareAt] = useState<string>("");
+  const [discount, setDiscount] = useState<string>("");
   const [currency, setCurrency] = useState<string>("XOF");
+
+  const priceNum = price ? Number(price) : null;
+  const compareNum = compareAt ? Number(compareAt) : null;
+  const discountNum = discount ? Number(discount) : null;
+  // Auto-compute discount % when both prices given and no manual override
+  const autoDiscount =
+    priceNum && compareNum && compareNum > priceNum && !discountNum
+      ? Math.round(((compareNum - priceNum) / compareNum) * 100)
+      : null;
+  const effectiveDiscount = discountNum ?? autoDiscount;
+  const finalPrice =
+    priceNum ??
+    (compareNum && discountNum ? Math.round(compareNum * (1 - discountNum / 100)) : null);
 
   async function handleAiGenerate() {
     setAiLoading(true);
