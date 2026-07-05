@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { fetchNotifications, broadcastNotification } from "@/lib/admin-api";
+import { fetchNotifications, broadcastNotification, type NotifMediaItem } from "@/lib/admin-api";
 import { generateNotificationMessage } from "@/lib/ai-notif.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Send, Bell, Sparkles, Upload, Loader2, X, Image as ImageIcon, Video, Tag, MessageSquare } from "lucide-react";
+import { Send, Bell, Sparkles, Upload, Loader2, X, Image as ImageIcon, Video, Tag, MessageSquare, GripVertical } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/admin/notifications")({ component: NotifAdmin });
@@ -23,9 +23,10 @@ function NotifAdmin() {
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
 
-  const [mediaUrl, setMediaUrl] = useState<string | null>(null);
-  const [mediaType, setMediaType] = useState<"image" | "video" | null>(null);
+  const [mediaItems, setMediaItems] = useState<NotifMediaItem[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
 
   const [price, setPrice] = useState<string>("");
   const [currency, setCurrency] = useState<string>("XOF");
@@ -45,33 +46,44 @@ function NotifAdmin() {
     }
   }
 
-  async function handleUpload(file: File) {
-    if (!file) return;
-    const isVideo = file.type.startsWith("video/");
-    const isImage = file.type.startsWith("image/");
-    if (!isVideo && !isImage) {
-      toast.error("Seuls les images et vidéos sont acceptés");
-      return;
-    }
-    if (file.size > 25 * 1024 * 1024) {
-      toast.error("Fichier trop volumineux (max 25 Mo)");
-      return;
-    }
+  async function handleUploadFiles(files: FileList | null) {
+    if (!files || !files.length) return;
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop() || (isVideo ? "mp4" : "jpg");
-      const path = `notifications/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const { error } = await supabase.storage.from("products").upload(path, file, { upsert: false, contentType: file.type });
-      if (error) throw error;
-      const { data: pub } = supabase.storage.from("products").getPublicUrl(path);
-      setMediaUrl(pub.publicUrl);
-      setMediaType(isVideo ? "video" : "image");
-      toast.success("Média téléversé");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Échec du téléversement");
+      const added: NotifMediaItem[] = [];
+      for (const file of Array.from(files)) {
+        const isVideo = file.type.startsWith("video/");
+        const isImage = file.type.startsWith("image/");
+        if (!isVideo && !isImage) { toast.error(`« ${file.name} » ignoré (type non supporté)`); continue; }
+        if (file.size > 25 * 1024 * 1024) { toast.error(`« ${file.name} » ignoré (>25 Mo)`); continue; }
+        const ext = file.name.split(".").pop() || (isVideo ? "mp4" : "jpg");
+        const path = `notifications/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error } = await supabase.storage.from("products").upload(path, file, { upsert: false, contentType: file.type });
+        if (error) { toast.error(`Échec « ${file.name} » : ${error.message}`); continue; }
+        const { data: pub } = supabase.storage.from("products").getPublicUrl(path);
+        added.push({ url: pub.publicUrl, type: isVideo ? "video" : "image" });
+      }
+      if (added.length) {
+        setMediaItems((prev) => [...prev, ...added]);
+        toast.success(`${added.length} média(s) ajouté(s)`);
+      }
     } finally {
       setUploading(false);
     }
+  }
+
+  function removeMedia(i: number) {
+    setMediaItems((prev) => prev.filter((_, j) => j !== i));
+  }
+
+  function reorder(from: number, to: number) {
+    if (from === to) return;
+    setMediaItems((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
   }
 
   async function send(e: React.FormEvent) {
@@ -86,14 +98,13 @@ function NotifAdmin() {
         body,
         audience,
         link,
-        media_url: mediaUrl,
-        media_type: mediaType,
+        media_items: mediaItems,
         price: price ? Number(price) : null,
         currency: price ? currency : null,
       });
       toast.success("Notification envoyée");
       setTitle(""); setBody(""); setLink(""); setAiPrompt("");
-      setMediaUrl(null); setMediaType(null); setPrice("");
+      setMediaItems([]); setPrice("");
       qc.invalidateQueries({ queryKey: ["notifs-admin"] });
     } catch (e: any) {
       toast.error(e.message);
@@ -153,45 +164,82 @@ function NotifAdmin() {
           </TabsContent>
 
           <TabsContent value="media" className="space-y-3 mt-4">
-            {mediaUrl ? (
-              <div className="relative inline-block">
-                {mediaType === "video" ? (
-                  <video src={mediaUrl} className="max-h-64 rounded border" controls />
-                ) : (
-                  <img src={mediaUrl} alt="Aperçu" className="max-h-64 rounded border" />
-                )}
-                <button
-                  type="button"
-                  onClick={() => { setMediaUrl(null); setMediaType(null); }}
-                  className="absolute -top-2 -right-2 bg-foreground text-background rounded-full p-1"
-                  aria-label="Retirer le média"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ) : (
-              <label className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8 cursor-pointer hover:bg-secondary/30 transition">
-                {uploading ? (
-                  <Loader2 className="h-6 w-6 animate-spin text-gold" />
-                ) : (
-                  <>
-                    <Upload className="h-6 w-6 text-muted-foreground mb-2" />
-                    <p className="text-sm">Cliquer pour ajouter une photo ou une vidéo</p>
-                    <p className="text-xs text-muted-foreground mt-1">JPG, PNG, MP4, WebM — max 25 Mo</p>
-                  </>
-                )}
-                <input
-                  type="file"
-                  accept="image/*,video/*"
-                  className="hidden"
-                  disabled={uploading}
-                  onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])}
-                />
-              </label>
+            {mediaItems.length > 0 && (
+              <>
+                <p className="text-xs text-muted-foreground">
+                  Glisser-déposer pour réordonner. Le premier média sert d'aperçu principal.
+                </p>
+                <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {mediaItems.map((m, i) => (
+                    <li
+                      key={m.url}
+                      draggable
+                      onDragStart={(e) => { setDragIndex(i); e.dataTransfer.effectAllowed = "move"; }}
+                      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (overIndex !== i) setOverIndex(i); }}
+                      onDragLeave={() => { if (overIndex === i) setOverIndex(null); }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (dragIndex !== null) reorder(dragIndex, i);
+                        setDragIndex(null); setOverIndex(null);
+                      }}
+                      onDragEnd={() => { setDragIndex(null); setOverIndex(null); }}
+                      className={`relative group border rounded-lg overflow-hidden bg-secondary/20 cursor-move transition ${
+                        overIndex === i ? "ring-2 ring-gold" : ""
+                      } ${dragIndex === i ? "opacity-40" : ""}`}
+                    >
+                      <div className="aspect-square w-full">
+                        {m.type === "video" ? (
+                          <video src={m.url} className="w-full h-full object-cover" muted />
+                        ) : (
+                          <img src={m.url} alt="" className="w-full h-full object-cover" />
+                        )}
+                      </div>
+                      <div className="absolute top-1 left-1 bg-foreground/80 text-background text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1">
+                        <GripVertical className="h-3 w-3" /> {i + 1}
+                      </div>
+                      {i === 0 && (
+                        <div className="absolute bottom-1 left-1 bg-gold text-background text-[10px] px-1.5 py-0.5 rounded tracking-luxe">
+                          Principal
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeMedia(i)}
+                        className="absolute top-1 right-1 bg-foreground text-background rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
+                        aria-label="Retirer"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
+
+            <label className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 cursor-pointer hover:bg-secondary/30 transition">
+              {uploading ? (
+                <Loader2 className="h-6 w-6 animate-spin text-gold" />
+              ) : (
+                <>
+                  <Upload className="h-6 w-6 text-muted-foreground mb-2" />
+                  <p className="text-sm">Cliquer pour ajouter des photos ou vidéos</p>
+                  <p className="text-xs text-muted-foreground mt-1">JPG, PNG, MP4, WebM — max 25 Mo / fichier</p>
+                </>
+              )}
+              <input
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                className="hidden"
+                disabled={uploading}
+                onChange={(e) => { handleUploadFiles(e.target.files); e.target.value = ""; }}
+              />
+            </label>
+
             <div className="flex gap-4 text-xs text-muted-foreground">
               <span className="inline-flex items-center gap-1"><ImageIcon className="h-3 w-3" /> Image</span>
               <span className="inline-flex items-center gap-1"><Video className="h-3 w-3" /> Vidéo</span>
+              <span className="inline-flex items-center gap-1"><GripVertical className="h-3 w-3" /> Glisser pour réordonner</span>
             </div>
           </TabsContent>
 

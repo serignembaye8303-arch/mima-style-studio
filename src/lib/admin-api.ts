@@ -220,6 +220,8 @@ export async function fetchNotifications(userId?: string) {
   return (data ?? []) as any[];
 }
 
+export type NotifMediaItem = { url: string; type: "image" | "video" };
+
 export async function broadcastNotification(input: {
   title: string;
   body?: string;
@@ -228,17 +230,21 @@ export async function broadcastNotification(input: {
   type?: string;
   media_url?: string | null;
   media_type?: "image" | "video" | null;
+  media_items?: NotifMediaItem[];
   price?: number | null;
   currency?: string | null;
 }) {
+  const items = input.media_items ?? [];
+  const first = items[0];
   const { error } = await sb.from("notifications").insert({
     title: input.title,
     body: input.body ?? null,
     audience: input.audience,
     link: input.link ?? null,
     type: input.type ?? "promo",
-    media_url: input.media_url ?? null,
-    media_type: input.media_type ?? null,
+    media_url: input.media_url ?? first?.url ?? null,
+    media_type: input.media_type ?? first?.type ?? null,
+    media_items: items as any,
     price: input.price ?? null,
     currency: input.currency ?? (input.price ? "XOF" : null),
   });
