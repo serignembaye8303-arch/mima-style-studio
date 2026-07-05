@@ -77,8 +77,10 @@ export type Database = {
         Row: {
           audience: string
           body: string | null
+          compare_at_price: number | null
           created_at: string
           currency: string | null
+          discount_percent: number | null
           id: string
           is_read: boolean
           link: string | null
@@ -93,8 +95,10 @@ export type Database = {
         Insert: {
           audience?: string
           body?: string | null
+          compare_at_price?: number | null
           created_at?: string
           currency?: string | null
+          discount_percent?: number | null
           id?: string
           is_read?: boolean
           link?: string | null
@@ -109,8 +113,10 @@ export type Database = {
         Update: {
           audience?: string
           body?: string | null
+          compare_at_price?: number | null
           created_at?: string
           currency?: string | null
+          discount_percent?: number | null
           id?: string
           is_read?: boolean
           link?: string | null
