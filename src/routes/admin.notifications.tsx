@@ -46,33 +46,44 @@ function NotifAdmin() {
     }
   }
 
-  async function handleUpload(file: File) {
-    if (!file) return;
-    const isVideo = file.type.startsWith("video/");
-    const isImage = file.type.startsWith("image/");
-    if (!isVideo && !isImage) {
-      toast.error("Seuls les images et vidéos sont acceptés");
-      return;
-    }
-    if (file.size > 25 * 1024 * 1024) {
-      toast.error("Fichier trop volumineux (max 25 Mo)");
-      return;
-    }
+  async function handleUploadFiles(files: FileList | null) {
+    if (!files || !files.length) return;
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop() || (isVideo ? "mp4" : "jpg");
-      const path = `notifications/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const { error } = await supabase.storage.from("products").upload(path, file, { upsert: false, contentType: file.type });
-      if (error) throw error;
-      const { data: pub } = supabase.storage.from("products").getPublicUrl(path);
-      setMediaUrl(pub.publicUrl);
-      setMediaType(isVideo ? "video" : "image");
-      toast.success("Média téléversé");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Échec du téléversement");
+      const added: NotifMediaItem[] = [];
+      for (const file of Array.from(files)) {
+        const isVideo = file.type.startsWith("video/");
+        const isImage = file.type.startsWith("image/");
+        if (!isVideo && !isImage) { toast.error(`« ${file.name} » ignoré (type non supporté)`); continue; }
+        if (file.size > 25 * 1024 * 1024) { toast.error(`« ${file.name} » ignoré (>25 Mo)`); continue; }
+        const ext = file.name.split(".").pop() || (isVideo ? "mp4" : "jpg");
+        const path = `notifications/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error } = await supabase.storage.from("products").upload(path, file, { upsert: false, contentType: file.type });
+        if (error) { toast.error(`Échec « ${file.name} » : ${error.message}`); continue; }
+        const { data: pub } = supabase.storage.from("products").getPublicUrl(path);
+        added.push({ url: pub.publicUrl, type: isVideo ? "video" : "image" });
+      }
+      if (added.length) {
+        setMediaItems((prev) => [...prev, ...added]);
+        toast.success(`${added.length} média(s) ajouté(s)`);
+      }
     } finally {
       setUploading(false);
     }
+  }
+
+  function removeMedia(i: number) {
+    setMediaItems((prev) => prev.filter((_, j) => j !== i));
+  }
+
+  function reorder(from: number, to: number) {
+    if (from === to) return;
+    setMediaItems((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
   }
 
   async function send(e: React.FormEvent) {
@@ -87,14 +98,13 @@ function NotifAdmin() {
         body,
         audience,
         link,
-        media_url: mediaUrl,
-        media_type: mediaType,
+        media_items: mediaItems,
         price: price ? Number(price) : null,
         currency: price ? currency : null,
       });
       toast.success("Notification envoyée");
       setTitle(""); setBody(""); setLink(""); setAiPrompt("");
-      setMediaUrl(null); setMediaType(null); setPrice("");
+      setMediaItems([]); setPrice("");
       qc.invalidateQueries({ queryKey: ["notifs-admin"] });
     } catch (e: any) {
       toast.error(e.message);
