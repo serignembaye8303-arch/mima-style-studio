@@ -222,6 +222,18 @@ export async function fetchNotifications(userId?: string) {
 
 export type NotifMediaItem = { url: string; type: "image" | "video" };
 
+function formatMoney(v: number, cur: string): string {
+  const c = (cur || "XOF").toUpperCase();
+  if (c === "XOF" || c === "XAF") {
+    return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(v) + " " + (c === "XOF" ? "FCFA" : c);
+  }
+  try {
+    return new Intl.NumberFormat("fr-FR", { style: "currency", currency: c, maximumFractionDigits: v % 1 === 0 ? 0 : 2 }).format(v);
+  } catch {
+    return new Intl.NumberFormat("fr-FR").format(v) + " " + c;
+  }
+}
+
 export async function broadcastNotification(input: {
   title: string;
   body?: string;
@@ -235,12 +247,39 @@ export async function broadcastNotification(input: {
   compare_at_price?: number | null;
   discount_percent?: number | null;
   currency?: string | null;
+  product_id?: string | null;
 }) {
+  // ---- Validation ----
+  if (input.discount_percent != null && (input.discount_percent < 0 || input.discount_percent > 100)) {
+    throw new Error("La remise doit être comprise entre 0 et 100 %.");
+  }
+  if (input.price != null && input.compare_at_price != null && input.price > input.compare_at_price) {
+    throw new Error("Le prix promo doit être inférieur au prix d'origine.");
+  }
+
   const items = input.media_items ?? [];
   const first = items[0];
+  const currency = input.currency ?? (input.price || input.compare_at_price ? "XOF" : null);
+
+  // ---- Auto-inject price line in body ----
+  let body = (input.body ?? "").trim();
+  if (input.price != null || input.compare_at_price != null) {
+    const parts: string[] = [];
+    if (input.price != null) parts.push(formatMoney(input.price, currency ?? "XOF"));
+    if (input.compare_at_price != null && (input.price == null || input.compare_at_price > input.price)) {
+      parts.push(`(au lieu de ${formatMoney(input.compare_at_price, currency ?? "XOF")}`
+        + (input.discount_percent ? ` — -${Math.round(input.discount_percent)}%` : "")
+        + ")");
+    } else if (input.discount_percent) {
+      parts.push(`(-${Math.round(input.discount_percent)}%)`);
+    }
+    const line = "💰 " + parts.join(" ");
+    if (!body.includes(line)) body = (body ? body + "\n\n" : "") + line;
+  }
+
   const { error } = await sb.from("notifications").insert({
     title: input.title,
-    body: input.body ?? null,
+    body: body || null,
     audience: input.audience,
     link: input.link ?? null,
     type: input.type ?? "promo",
@@ -250,9 +289,29 @@ export async function broadcastNotification(input: {
     price: input.price ?? null,
     compare_at_price: input.compare_at_price ?? null,
     discount_percent: input.discount_percent ?? null,
-    currency: input.currency ?? (input.price ? "XOF" : null),
+    currency,
+    product_id: input.product_id ?? null,
   } as any);
   if (error) throw error;
+
+  // ---- Sync linked product ----
+  if (input.product_id && (input.price != null || input.compare_at_price != null)) {
+    const patch: Record<string, unknown> = {};
+    if (input.compare_at_price != null && input.price != null) {
+      patch.price = input.compare_at_price;
+      patch.sale_price = input.price;
+    } else if (input.price != null) {
+      patch.sale_price = input.price;
+    }
+    if (currency) patch.currency = currency;
+    const { error: upErr } = await sb.from("products").update(patch).eq("id", input.product_id);
+    if (upErr) console.warn("[broadcastNotification] product sync failed:", upErr);
+  }
+}
+
+export async function fetchProductsLite() {
+  const { data } = await sb.from("products").select("id,name,price,sale_price,currency").order("name");
+  return (data ?? []) as { id: string; name: string; price: number; sale_price: number | null; currency: string }[];
 }
 
 export async function markNotificationRead(id: string) {

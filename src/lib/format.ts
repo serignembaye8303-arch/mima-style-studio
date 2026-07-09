@@ -1,8 +1,21 @@
-export const formatPrice = (n: number, currency = "XOF") => {
-  if (currency === "XOF") {
-    return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(n) + " FCFA";
+const NON_ISO_CURRENCIES = new Set(["XOF", "XAF"]);
+
+export const formatPrice = (n: number | null | undefined, currency = "XOF") => {
+  const value = Number(n ?? 0);
+  const cur = (currency || "XOF").toUpperCase();
+  if (NON_ISO_CURRENCIES.has(cur)) {
+    const label = cur === "XOF" ? "FCFA" : cur;
+    return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(value) + " " + label;
   }
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency }).format(n);
+  try {
+    return new Intl.NumberFormat("fr-FR", {
+      style: "currency",
+      currency: cur,
+      maximumFractionDigits: value % 1 === 0 ? 0 : 2,
+    }).format(value);
+  } catch {
+    return new Intl.NumberFormat("fr-FR").format(value) + " " + cur;
+  }
 };
 
 export const CATEGORIES = [
