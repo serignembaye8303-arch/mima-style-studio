@@ -79,6 +79,7 @@ export type Database = {
           body: string | null
           compare_at_price: number | null
           created_at: string
+          created_by: string | null
           currency: string | null
           discount_percent: number | null
           id: string
@@ -88,6 +89,7 @@ export type Database = {
           media_type: string | null
           media_url: string | null
           price: number | null
+          product_id: string | null
           title: string
           type: string
           user_id: string | null
@@ -97,6 +99,7 @@ export type Database = {
           body?: string | null
           compare_at_price?: number | null
           created_at?: string
+          created_by?: string | null
           currency?: string | null
           discount_percent?: number | null
           id?: string
@@ -106,6 +109,7 @@ export type Database = {
           media_type?: string | null
           media_url?: string | null
           price?: number | null
+          product_id?: string | null
           title: string
           type?: string
           user_id?: string | null
@@ -115,6 +119,7 @@ export type Database = {
           body?: string | null
           compare_at_price?: number | null
           created_at?: string
+          created_by?: string | null
           currency?: string | null
           discount_percent?: number | null
           id?: string
@@ -124,11 +129,20 @@ export type Database = {
           media_type?: string | null
           media_url?: string | null
           price?: number | null
+          product_id?: string | null
           title?: string
           type?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notifications_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_items: {
         Row: {
