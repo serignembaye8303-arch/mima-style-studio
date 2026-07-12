@@ -36,7 +36,8 @@ function ProductPage() {
   if (isLoading) return <SiteLayout><div className="py-32 text-center text-muted-foreground">Chargement...</div></SiteLayout>;
   if (!product) throw notFound();
 
-  const price = product.sale_price ?? product.price;
+  const pd = computePriceDisplay(product);
+  const price = pd.mainAmount;
   const fav = isFavorite(product.id);
 
   const handleAdd = () => {
