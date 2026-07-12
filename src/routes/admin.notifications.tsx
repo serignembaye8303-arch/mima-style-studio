@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { fetchNotifications, broadcastNotification, fetchProductsLite, fetchAllProfiles, type NotifMediaItem } from "@/lib/admin-api";
@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatPrice } from "@/lib/format";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Send, Bell, Sparkles, Upload, Loader2, X, Image as ImageIcon, Video, Tag, MessageSquare, GripVertical, Package, User, ArrowRight } from "lucide-react";
+import { Send, Bell, Sparkles, Upload, Loader2, X, Image as ImageIcon, Video, Tag, MessageSquare, GripVertical, Package, User, ArrowRight, ExternalLink } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/admin/notifications")({ component: NotifAdmin });
