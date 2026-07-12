@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { formatNotificationPriceLine } from "@/lib/pricing";
+
 
 // Use any-typed client until generated types catch up
 const sb = supabase as any;
