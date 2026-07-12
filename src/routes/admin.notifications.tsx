@@ -386,7 +386,7 @@ function NotifAdmin() {
               </li>
             );
           })}
-          {!data?.length && <p className="text-muted-foreground text-sm text-center py-6">Aucune notification.</p>}
+          {!filteredHistory.length && <p className="text-muted-foreground text-sm text-center py-6">Aucune notification{data?.length ? " ne correspond aux filtres" : ""}.</p>}
         </ul>
       </div>
     </div>
