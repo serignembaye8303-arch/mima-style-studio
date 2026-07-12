@@ -143,8 +143,8 @@ function NotifAdmin() {
   // History filters
   const [diffFilter, setDiffFilter] = useState<"all" | "changed" | "unchanged">("all");
   const [currencyFilter, setCurrencyFilter] = useState<string>("all");
+  const [periodFilter, setPeriodFilter] = useState<"all" | "today" | "7d" | "30d">("all");
 
-  // Compute "Avant / Après" per notification based on previous entry with same product_id (or previous entry overall)
   const historyWithDiff = useMemo(() => {
     const list = (data ?? []) as any[];
     return list.map((n, idx) => {
@@ -164,14 +164,24 @@ function NotifAdmin() {
     return Array.from(set).sort();
   }, [historyWithDiff]);
 
+  const periodCutoff = useMemo(() => {
+    if (periodFilter === "all") return 0;
+    const d = new Date(); d.setHours(0, 0, 0, 0);
+    if (periodFilter === "today") return d.getTime();
+    if (periodFilter === "7d") return Date.now() - 7 * 86400_000;
+    return Date.now() - 30 * 86400_000;
+  }, [periodFilter]);
+
   const filteredHistory = useMemo(() => {
     return historyWithDiff.filter(({ n, priceChanged }) => {
       if (diffFilter === "changed" && !priceChanged) return false;
       if (diffFilter === "unchanged" && priceChanged) return false;
       if (currencyFilter !== "all" && String(n.currency ?? "").toUpperCase() !== currencyFilter) return false;
+      if (periodCutoff && new Date(n.created_at).getTime() < periodCutoff) return false;
       return true;
     });
-  }, [historyWithDiff, diffFilter, currencyFilter]);
+  }, [historyWithDiff, diffFilter, currencyFilter, periodCutoff]);
+
 
   return (
     <div className="space-y-6">
