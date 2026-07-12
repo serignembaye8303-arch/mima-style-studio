@@ -222,18 +222,6 @@ export async function fetchNotifications(userId?: string) {
 
 export type NotifMediaItem = { url: string; type: "image" | "video" };
 
-function formatMoney(v: number, cur: string): string {
-  const c = (cur || "XOF").toUpperCase();
-  if (c === "XOF" || c === "XAF") {
-    return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(v) + " " + (c === "XOF" ? "FCFA" : c);
-  }
-  try {
-    return new Intl.NumberFormat("fr-FR", { style: "currency", currency: c, maximumFractionDigits: v % 1 === 0 ? 0 : 2 }).format(v);
-  } catch {
-    return new Intl.NumberFormat("fr-FR").format(v) + " " + c;
-  }
-}
-
 export async function broadcastNotification(input: {
   title: string;
   body?: string;
