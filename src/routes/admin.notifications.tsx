@@ -312,9 +312,24 @@ function NotifAdmin() {
       </form>
 
       <div className="bg-background border rounded-lg p-6">
-        <h2 className="font-display text-xl mb-4">Historique</h2>
+        <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+          <h2 className="font-display text-xl">Historique</h2>
+          <div className="flex items-center gap-2 flex-wrap text-xs">
+            <div className="inline-flex border rounded overflow-hidden">
+              {([["all", "Tous"], ["changed", "Avec Avant/Après"], ["unchanged", "Sans changement"]] as const).map(([v, l]) => (
+                <button key={v} type="button" onClick={() => setDiffFilter(v)}
+                  className={`px-2.5 py-1 tracking-luxe uppercase text-[10px] ${diffFilter === v ? "bg-foreground text-background" : "hover:bg-secondary"}`}>{l}</button>
+              ))}
+            </div>
+            <select value={currencyFilter} onChange={(e) => setCurrencyFilter(e.target.value)} className="border rounded px-2 py-1 text-xs">
+              <option value="all">Toutes devises</option>
+              {availableCurrencies.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <span className="text-muted-foreground">{filteredHistory.length} / {historyWithDiff.length}</span>
+          </div>
+        </div>
         <ul className="divide-y">
-          {historyWithDiff.map(({ n, prev, priceChanged }) => {
+          {filteredHistory.map(({ n, prev, priceChanged }) => {
             const cur = n.currency ?? "XOF";
             const author = n.created_by ? (profileMap.get(n.created_by) ?? "Admin") : "—";
             const productName = n.product_id ? products.find((p) => p.id === n.product_id)?.name : null;
@@ -324,10 +339,11 @@ function NotifAdmin() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline gap-2 flex-wrap">
                     <p className="font-medium text-sm">{n.title}</p>
-                    {productName && (
-                      <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded inline-flex items-center gap-1">
-                        <Package className="h-3 w-3" /> {productName}
-                      </span>
+                    {productName && n.product_id && (
+                      <Link to="/admin/products/$id" params={{ id: n.product_id }}
+                        className="text-[10px] bg-secondary hover:bg-gold hover:text-background transition px-1.5 py-0.5 rounded inline-flex items-center gap-1">
+                        <Package className="h-3 w-3" /> {productName} <ExternalLink className="h-2.5 w-2.5" />
+                      </Link>
                     )}
                   </div>
                   {n.body && <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap">{n.body}</p>}
