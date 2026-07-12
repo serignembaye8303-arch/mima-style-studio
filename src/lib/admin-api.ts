@@ -251,19 +251,14 @@ export async function broadcastNotification(input: {
 
   // ---- Auto-inject price line in body ----
   let body = (input.body ?? "").trim();
-  if (input.price != null || input.compare_at_price != null) {
-    const parts: string[] = [];
-    if (input.price != null) parts.push(formatMoney(input.price, currency ?? "XOF"));
-    if (input.compare_at_price != null && (input.price == null || input.compare_at_price > input.price)) {
-      parts.push(`(au lieu de ${formatMoney(input.compare_at_price, currency ?? "XOF")}`
-        + (input.discount_percent ? ` — -${Math.round(input.discount_percent)}%` : "")
-        + ")");
-    } else if (input.discount_percent) {
-      parts.push(`(-${Math.round(input.discount_percent)}%)`);
-    }
-    const line = "💰 " + parts.join(" ");
-    if (!body.includes(line)) body = (body ? body + "\n\n" : "") + line;
-  }
+  const line = formatNotificationPriceLine({
+    price: input.price,
+    compare_at_price: input.compare_at_price,
+    discount_percent: input.discount_percent,
+    currency: currency ?? "XOF",
+  });
+  if (line && !body.includes(line)) body = (body ? body + "\n\n" : "") + line;
+
 
   const { error } = await sb.from("notifications").insert({
     title: input.title,
