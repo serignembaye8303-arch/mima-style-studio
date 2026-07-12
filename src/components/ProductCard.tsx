@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Heart } from "lucide-react";
 import type { Product } from "@/lib/products";
-import { formatPrice } from "@/lib/format";
+import { computePriceDisplay } from "@/lib/pricing";
 import { useFavorites } from "@/lib/use-favorites";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
@@ -10,7 +10,9 @@ export function ProductCard({ product }: { product: Product }) {
   const { user } = useAuth();
   const { isFavorite, toggle } = useFavorites();
   const fav = isFavorite(product.id);
-  const onSale = product.sale_price && product.sale_price < product.price;
+  const pd = computePriceDisplay(product);
+  const onSale = pd.onSale;
+
 
   const handleFav = (e: React.MouseEvent) => {
     e.preventDefault();
