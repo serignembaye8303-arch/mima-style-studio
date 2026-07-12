@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { formatNotificationPriceLine } from "@/lib/pricing";
+
 
 // Use any-typed client until generated types catch up
 const sb = supabase as any;
@@ -222,18 +224,6 @@ export async function fetchNotifications(userId?: string) {
 
 export type NotifMediaItem = { url: string; type: "image" | "video" };
 
-function formatMoney(v: number, cur: string): string {
-  const c = (cur || "XOF").toUpperCase();
-  if (c === "XOF" || c === "XAF") {
-    return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(v) + " " + (c === "XOF" ? "FCFA" : c);
-  }
-  try {
-    return new Intl.NumberFormat("fr-FR", { style: "currency", currency: c, maximumFractionDigits: v % 1 === 0 ? 0 : 2 }).format(v);
-  } catch {
-    return new Intl.NumberFormat("fr-FR").format(v) + " " + c;
-  }
-}
-
 export async function broadcastNotification(input: {
   title: string;
   body?: string;
@@ -263,19 +253,14 @@ export async function broadcastNotification(input: {
 
   // ---- Auto-inject price line in body ----
   let body = (input.body ?? "").trim();
-  if (input.price != null || input.compare_at_price != null) {
-    const parts: string[] = [];
-    if (input.price != null) parts.push(formatMoney(input.price, currency ?? "XOF"));
-    if (input.compare_at_price != null && (input.price == null || input.compare_at_price > input.price)) {
-      parts.push(`(au lieu de ${formatMoney(input.compare_at_price, currency ?? "XOF")}`
-        + (input.discount_percent ? ` — -${Math.round(input.discount_percent)}%` : "")
-        + ")");
-    } else if (input.discount_percent) {
-      parts.push(`(-${Math.round(input.discount_percent)}%)`);
-    }
-    const line = "💰 " + parts.join(" ");
-    if (!body.includes(line)) body = (body ? body + "\n\n" : "") + line;
-  }
+  const line = formatNotificationPriceLine({
+    price: input.price,
+    compare_at_price: input.compare_at_price,
+    discount_percent: input.discount_percent,
+    currency: currency ?? "XOF",
+  });
+  if (line && !body.includes(line)) body = (body ? body + "\n\n" : "") + line;
+
 
   const { error } = await sb.from("notifications").insert({
     title: input.title,

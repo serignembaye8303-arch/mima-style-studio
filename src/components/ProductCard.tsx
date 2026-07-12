@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Heart } from "lucide-react";
 import type { Product } from "@/lib/products";
-import { formatPrice } from "@/lib/format";
+import { computePriceDisplay } from "@/lib/pricing";
 import { useFavorites } from "@/lib/use-favorites";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
@@ -10,7 +10,9 @@ export function ProductCard({ product }: { product: Product }) {
   const { user } = useAuth();
   const { isFavorite, toggle } = useFavorites();
   const fav = isFavorite(product.id);
-  const onSale = product.sale_price && product.sale_price < product.price;
+  const pd = computePriceDisplay(product);
+  const onSale = pd.onSale;
+
 
   const handleFav = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -49,16 +51,16 @@ export function ProductCard({ product }: { product: Product }) {
       <div className="pt-4 pb-2">
         <h3 className="font-display text-lg leading-tight">{product.name}</h3>
         <p className="text-[11px] tracking-luxe text-muted-foreground mt-1 capitalize">{product.category}</p>
-        <div className="mt-2 flex items-baseline gap-2">
-          {onSale ? (
-            <>
-              <span className="text-foreground font-medium">{formatPrice(product.sale_price!, product.currency)}</span>
-              <span className="text-xs text-muted-foreground line-through">{formatPrice(product.price, product.currency)}</span>
-            </>
-          ) : (
-            <span className="text-foreground font-medium">{formatPrice(product.price, product.currency)}</span>
+        <div className="mt-2 flex items-baseline gap-2" data-testid="product-price">
+          <span className="text-foreground font-medium" data-testid="price-main">{pd.main}</span>
+          {pd.compare && (
+            <span className="text-xs text-muted-foreground line-through" data-testid="price-compare">{pd.compare}</span>
+          )}
+          {pd.discountPct != null && (
+            <span className="text-[10px] tracking-luxe bg-rose text-foreground px-1.5 py-0.5" data-testid="price-discount">-{pd.discountPct}%</span>
           )}
         </div>
+
       </div>
     </Link>
   );

@@ -143,8 +143,8 @@ function NotifAdmin() {
   // History filters
   const [diffFilter, setDiffFilter] = useState<"all" | "changed" | "unchanged">("all");
   const [currencyFilter, setCurrencyFilter] = useState<string>("all");
+  const [periodFilter, setPeriodFilter] = useState<"all" | "today" | "7d" | "30d">("all");
 
-  // Compute "Avant / Après" per notification based on previous entry with same product_id (or previous entry overall)
   const historyWithDiff = useMemo(() => {
     const list = (data ?? []) as any[];
     return list.map((n, idx) => {
@@ -164,14 +164,24 @@ function NotifAdmin() {
     return Array.from(set).sort();
   }, [historyWithDiff]);
 
+  const periodCutoff = useMemo(() => {
+    if (periodFilter === "all") return 0;
+    const d = new Date(); d.setHours(0, 0, 0, 0);
+    if (periodFilter === "today") return d.getTime();
+    if (periodFilter === "7d") return Date.now() - 7 * 86400_000;
+    return Date.now() - 30 * 86400_000;
+  }, [periodFilter]);
+
   const filteredHistory = useMemo(() => {
     return historyWithDiff.filter(({ n, priceChanged }) => {
       if (diffFilter === "changed" && !priceChanged) return false;
       if (diffFilter === "unchanged" && priceChanged) return false;
       if (currencyFilter !== "all" && String(n.currency ?? "").toUpperCase() !== currencyFilter) return false;
+      if (periodCutoff && new Date(n.created_at).getTime() < periodCutoff) return false;
       return true;
     });
-  }, [historyWithDiff, diffFilter, currencyFilter]);
+  }, [historyWithDiff, diffFilter, currencyFilter, periodCutoff]);
+
 
   return (
     <div className="space-y-6">
@@ -313,21 +323,41 @@ function NotifAdmin() {
 
       <div className="bg-background border rounded-lg p-6">
         <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-          <h2 className="font-display text-xl">Historique</h2>
+          <h2 className="font-display text-xl" id="hist-title">Historique</h2>
           <div className="flex items-center gap-2 flex-wrap text-xs">
-            <div className="inline-flex border rounded overflow-hidden">
-              {([["all", "Tous"], ["changed", "Avec Avant/Après"], ["unchanged", "Sans changement"]] as const).map(([v, l]) => (
-                <button key={v} type="button" onClick={() => setDiffFilter(v)}
-                  className={`px-2.5 py-1 tracking-luxe uppercase text-[10px] ${diffFilter === v ? "bg-foreground text-background" : "hover:bg-secondary"}`}>{l}</button>
-              ))}
+            <div role="radiogroup" aria-label="Filtrer par changement de prix" className="inline-flex border rounded overflow-hidden">
+              {([["all", "Tous"], ["changed", "Avec Avant/Après"], ["unchanged", "Sans changement"]] as const).map(([v, l]) => {
+                const active = diffFilter === v;
+                return (
+                  <button key={v} type="button" role="radio" aria-checked={active} tabIndex={active ? 0 : -1}
+                    onClick={() => setDiffFilter(v)}
+                    className={`px-2.5 py-1 tracking-luxe uppercase text-[10px] focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:z-10 ${active ? "bg-foreground text-background" : "hover:bg-secondary"}`}>{l}</button>
+                );
+              })}
             </div>
-            <select value={currencyFilter} onChange={(e) => setCurrencyFilter(e.target.value)} className="border rounded px-2 py-1 text-xs">
-              <option value="all">Toutes devises</option>
-              {availableCurrencies.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <span className="text-muted-foreground">{filteredHistory.length} / {historyWithDiff.length}</span>
+            <div role="radiogroup" aria-label="Filtrer par période" className="inline-flex border rounded overflow-hidden">
+              {([["all", "Tout"], ["today", "Aujourd'hui"], ["7d", "7 j"], ["30d", "30 j"]] as const).map(([v, l]) => {
+                const active = periodFilter === v;
+                return (
+                  <button key={v} type="button" role="radio" aria-checked={active} tabIndex={active ? 0 : -1}
+                    onClick={() => setPeriodFilter(v)}
+                    className={`px-2.5 py-1 tracking-luxe uppercase text-[10px] focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:z-10 ${active ? "bg-foreground text-background" : "hover:bg-secondary"}`}>{l}</button>
+                );
+              })}
+            </div>
+            <label className="inline-flex items-center gap-1">
+              <span className="sr-only">Filtrer par devise</span>
+              <select value={currencyFilter} onChange={(e) => setCurrencyFilter(e.target.value)}
+                aria-label="Filtrer par devise"
+                className="border rounded px-2 py-1 text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-gold">
+                <option value="all">Toutes devises</option>
+                {availableCurrencies.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </label>
+            <span className="text-muted-foreground" aria-live="polite">{filteredHistory.length} / {historyWithDiff.length}</span>
           </div>
         </div>
+
         <ul className="divide-y">
           {filteredHistory.map(({ n, prev, priceChanged }) => {
             const cur = n.currency ?? "XOF";

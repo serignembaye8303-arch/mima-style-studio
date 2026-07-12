@@ -53,20 +53,23 @@ function Boutique() {
       </section>
 
       <div className="max-w-7xl mx-auto px-6 py-12">
-        <nav className="flex flex-wrap gap-2 mb-10 justify-center">
+        <nav aria-label="Filtrer par catégorie" className="flex flex-wrap gap-2 mb-10 justify-center">
           <Link
             to="/boutique"
-            className={`text-[11px] tracking-luxe px-4 py-2 border ${!category ? "bg-foreground text-background border-foreground" : "border-border hover:border-foreground"}`}
+            aria-current={!category ? "page" : undefined}
+            className={`text-[11px] tracking-luxe px-4 py-2 border focus:outline-none focus-visible:ring-2 focus-visible:ring-gold ${!category ? "bg-foreground text-background border-foreground" : "border-border hover:border-foreground"}`}
           >Toutes</Link>
           {CATEGORIES.map((c) => (
             <Link
               key={c.slug}
               to="/boutique"
               search={{ category: c.slug }}
-              className={`text-[11px] tracking-luxe px-4 py-2 border ${category === c.slug ? "bg-foreground text-background border-foreground" : "border-border hover:border-foreground"}`}
+              aria-current={category === c.slug ? "page" : undefined}
+              className={`text-[11px] tracking-luxe px-4 py-2 border focus:outline-none focus-visible:ring-2 focus-visible:ring-gold ${category === c.slug ? "bg-foreground text-background border-foreground" : "border-border hover:border-foreground"}`}
             >{c.label}</Link>
           ))}
         </nav>
+
 
         {isLoading ? (
           <div className="text-center py-20 text-muted-foreground text-sm">Chargement...</div>
