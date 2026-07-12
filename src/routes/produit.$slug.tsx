@@ -5,7 +5,6 @@ import { Heart, Minus, Plus, Truck, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { SiteLayout } from "@/components/SiteLayout";
 import { fetchProductBySlug } from "@/lib/products";
-import { formatPrice } from "@/lib/format";
 import { computePriceDisplay } from "@/lib/pricing";
 import { useCart } from "@/lib/cart-context";
 import { useFavorites } from "@/lib/use-favorites";
