@@ -62,10 +62,14 @@ function ProductPage() {
             {product.is_new && <span className="bg-foreground text-background text-[9px] tracking-luxe px-2.5 py-1 inline-block mb-4">Nouveau</span>}
             <h1 className="font-display text-4xl sm:text-5xl">{product.name}</h1>
             <p className="text-[11px] tracking-luxe text-muted-foreground mt-2 capitalize">{product.category}</p>
-            <div className="mt-6 flex items-baseline gap-3">
-              <span className="text-2xl font-display">{formatPrice(price, product.currency)}</span>
-              {product.sale_price && <span className="text-sm text-muted-foreground line-through">{formatPrice(product.price, product.currency)}</span>}
+            <div className="mt-6 flex items-baseline gap-3" data-testid="product-price">
+              <span className="text-2xl font-display" data-testid="price-main">{pd.main}</span>
+              {pd.compare && <span className="text-sm text-muted-foreground line-through" data-testid="price-compare">{pd.compare}</span>}
+              {pd.discountPct != null && (
+                <span className="text-[10px] tracking-luxe bg-rose text-foreground px-2 py-0.5" data-testid="price-discount">-{pd.discountPct}%</span>
+              )}
             </div>
+
             <p className="mt-6 text-muted-foreground leading-relaxed">{product.description}</p>
 
             {product.sizes.length > 0 && (
