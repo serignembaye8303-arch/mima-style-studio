@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { fetchNotifications, broadcastNotification, fetchProductsLite, fetchAllProfiles, type NotifMediaItem } from "@/lib/admin-api";
@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatPrice } from "@/lib/format";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Send, Bell, Sparkles, Upload, Loader2, X, Image as ImageIcon, Video, Tag, MessageSquare, GripVertical, Package, User, ArrowRight } from "lucide-react";
+import { Send, Bell, Sparkles, Upload, Loader2, X, Image as ImageIcon, Video, Tag, MessageSquare, GripVertical, Package, User, ArrowRight, ExternalLink } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/admin/notifications")({ component: NotifAdmin });
@@ -140,6 +140,10 @@ function NotifAdmin() {
     return m;
   }, [profiles]);
 
+  // History filters
+  const [diffFilter, setDiffFilter] = useState<"all" | "changed" | "unchanged">("all");
+  const [currencyFilter, setCurrencyFilter] = useState<string>("all");
+
   // Compute "Avant / Après" per notification based on previous entry with same product_id (or previous entry overall)
   const historyWithDiff = useMemo(() => {
     const list = (data ?? []) as any[];
@@ -149,10 +153,25 @@ function NotifAdmin() {
         const c = list[j];
         if (n.product_id ? c.product_id === n.product_id : !c.product_id) { prev = c; break; }
       }
-      const priceChanged = prev && (prev.price !== n.price || prev.compare_at_price !== n.compare_at_price);
+      const priceChanged = !!prev && (Number(prev.price) !== Number(n.price) || Number(prev.compare_at_price) !== Number(n.compare_at_price));
       return { n, prev, priceChanged };
     });
   }, [data]);
+
+  const availableCurrencies = useMemo(() => {
+    const set = new Set<string>();
+    for (const { n } of historyWithDiff) if (n.currency) set.add(String(n.currency).toUpperCase());
+    return Array.from(set).sort();
+  }, [historyWithDiff]);
+
+  const filteredHistory = useMemo(() => {
+    return historyWithDiff.filter(({ n, priceChanged }) => {
+      if (diffFilter === "changed" && !priceChanged) return false;
+      if (diffFilter === "unchanged" && priceChanged) return false;
+      if (currencyFilter !== "all" && String(n.currency ?? "").toUpperCase() !== currencyFilter) return false;
+      return true;
+    });
+  }, [historyWithDiff, diffFilter, currencyFilter]);
 
   return (
     <div className="space-y-6">
@@ -293,9 +312,24 @@ function NotifAdmin() {
       </form>
 
       <div className="bg-background border rounded-lg p-6">
-        <h2 className="font-display text-xl mb-4">Historique</h2>
+        <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+          <h2 className="font-display text-xl">Historique</h2>
+          <div className="flex items-center gap-2 flex-wrap text-xs">
+            <div className="inline-flex border rounded overflow-hidden">
+              {([["all", "Tous"], ["changed", "Avec Avant/Après"], ["unchanged", "Sans changement"]] as const).map(([v, l]) => (
+                <button key={v} type="button" onClick={() => setDiffFilter(v)}
+                  className={`px-2.5 py-1 tracking-luxe uppercase text-[10px] ${diffFilter === v ? "bg-foreground text-background" : "hover:bg-secondary"}`}>{l}</button>
+              ))}
+            </div>
+            <select value={currencyFilter} onChange={(e) => setCurrencyFilter(e.target.value)} className="border rounded px-2 py-1 text-xs">
+              <option value="all">Toutes devises</option>
+              {availableCurrencies.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <span className="text-muted-foreground">{filteredHistory.length} / {historyWithDiff.length}</span>
+          </div>
+        </div>
         <ul className="divide-y">
-          {historyWithDiff.map(({ n, prev, priceChanged }) => {
+          {filteredHistory.map(({ n, prev, priceChanged }) => {
             const cur = n.currency ?? "XOF";
             const author = n.created_by ? (profileMap.get(n.created_by) ?? "Admin") : "—";
             const productName = n.product_id ? products.find((p) => p.id === n.product_id)?.name : null;
@@ -305,10 +339,11 @@ function NotifAdmin() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline gap-2 flex-wrap">
                     <p className="font-medium text-sm">{n.title}</p>
-                    {productName && (
-                      <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded inline-flex items-center gap-1">
-                        <Package className="h-3 w-3" /> {productName}
-                      </span>
+                    {productName && n.product_id && (
+                      <Link to="/admin/products/$id" params={{ id: n.product_id }}
+                        className="text-[10px] bg-secondary hover:bg-gold hover:text-background transition px-1.5 py-0.5 rounded inline-flex items-center gap-1">
+                        <Package className="h-3 w-3" /> {productName} <ExternalLink className="h-2.5 w-2.5" />
+                      </Link>
                     )}
                   </div>
                   {n.body && <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap">{n.body}</p>}
@@ -351,7 +386,7 @@ function NotifAdmin() {
               </li>
             );
           })}
-          {!data?.length && <p className="text-muted-foreground text-sm text-center py-6">Aucune notification.</p>}
+          {!filteredHistory.length && <p className="text-muted-foreground text-sm text-center py-6">Aucune notification{data?.length ? " ne correspond aux filtres" : ""}.</p>}
         </ul>
       </div>
     </div>
