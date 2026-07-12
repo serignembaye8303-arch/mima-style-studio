@@ -140,6 +140,10 @@ function NotifAdmin() {
     return m;
   }, [profiles]);
 
+  // History filters
+  const [diffFilter, setDiffFilter] = useState<"all" | "changed" | "unchanged">("all");
+  const [currencyFilter, setCurrencyFilter] = useState<string>("all");
+
   // Compute "Avant / Après" per notification based on previous entry with same product_id (or previous entry overall)
   const historyWithDiff = useMemo(() => {
     const list = (data ?? []) as any[];
@@ -149,10 +153,25 @@ function NotifAdmin() {
         const c = list[j];
         if (n.product_id ? c.product_id === n.product_id : !c.product_id) { prev = c; break; }
       }
-      const priceChanged = prev && (prev.price !== n.price || prev.compare_at_price !== n.compare_at_price);
+      const priceChanged = !!prev && (Number(prev.price) !== Number(n.price) || Number(prev.compare_at_price) !== Number(n.compare_at_price));
       return { n, prev, priceChanged };
     });
   }, [data]);
+
+  const availableCurrencies = useMemo(() => {
+    const set = new Set<string>();
+    for (const { n } of historyWithDiff) if (n.currency) set.add(String(n.currency).toUpperCase());
+    return Array.from(set).sort();
+  }, [historyWithDiff]);
+
+  const filteredHistory = useMemo(() => {
+    return historyWithDiff.filter(({ n, priceChanged }) => {
+      if (diffFilter === "changed" && !priceChanged) return false;
+      if (diffFilter === "unchanged" && priceChanged) return false;
+      if (currencyFilter !== "all" && String(n.currency ?? "").toUpperCase() !== currencyFilter) return false;
+      return true;
+    });
+  }, [historyWithDiff, diffFilter, currencyFilter]);
 
   return (
     <div className="space-y-6">
